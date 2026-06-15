@@ -33,7 +33,7 @@ class BuildQuickActions extends StatelessWidget {
     return Padding(
       // Menggunakan padding top kecil (misal: 12) untuk memberi napas dengan TopBar
       // tanpa membuat gap yang aneh seperti penggunaan Transform.translate
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
         // Penting: agar tidak konflik dengan scroll CustomScrollView utama

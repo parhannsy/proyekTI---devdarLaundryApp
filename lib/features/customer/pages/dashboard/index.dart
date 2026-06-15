@@ -27,6 +27,7 @@ class HomePage extends StatelessWidget {
               index: 1, 
               child: BuildQuickActions(),
             ),
+            const SizedBox(height: 16),
             
             // Elemen 2: Promo Banners
             const AnimatedFadeSlider(

@@ -2,6 +2,7 @@ import 'package:devdar_laundry_pos_app/core/theme/widgets/customer/top_bar.dart'
 import 'package:devdar_laundry_pos_app/features/customer/pages/mission/index.dart';
 import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/dashboard/index.dart';
+import 'package:devdar_laundry_pos_app/features/customer/pages/profil/index.dart';
 import 'package:devdar_laundry_pos_app/core/theme/widgets/customer/bottom_bar.dart';
 
 class BasePage extends StatefulWidget {
@@ -84,7 +85,7 @@ class _BasePageState extends State<BasePage> {
                 const HomePage(), // Ingat: HomePage harus punya SliverPadding(bottom: 110)
                 _buildSimplePage(const Center(child: Text('Order Page'))),
                 const MissionPage(),
-                _buildSimplePage(const Center(child: Text('Profile Page'))),
+                const ProfilePage(),
               ],
             ),
           ),
