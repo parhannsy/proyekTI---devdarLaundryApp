@@ -1,5 +1,6 @@
 import 'package:devdar_laundry_pos_app/core/theme/widgets/customer/top_bar.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/mission/index.dart';
+import 'package:devdar_laundry_pos_app/features/customer/pages/order/index.dart';
 import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/dashboard/index.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/profil/index.dart';
@@ -53,14 +54,6 @@ class _BasePageState extends State<BasePage> {
     );
   }
 
-  // Helper untuk halaman non-scrollable agar punya padding bawah
-  Widget _buildSimplePage(Widget content) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 110),
-      child: content,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,8 +75,8 @@ class _BasePageState extends State<BasePage> {
               onPageChanged: _onPageChanged,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                const HomePage(), // Ingat: HomePage harus punya SliverPadding(bottom: 110)
-                _buildSimplePage(const Center(child: Text('Order Page'))),
+                const HomePage(),
+                const OrderPage(),
                 const MissionPage(),
                 const ProfilePage(),
               ],
