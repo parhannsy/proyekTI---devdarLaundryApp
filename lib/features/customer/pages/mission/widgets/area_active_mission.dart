@@ -20,6 +20,7 @@ class ActiveMissionCard extends StatelessWidget {
     double progressPercent = totalProgress > 0 ? (currentProgress / totalProgress) : 0.0;
 
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       width: 280,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
