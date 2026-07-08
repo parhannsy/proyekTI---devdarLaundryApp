@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class BuildPromoBanners extends StatelessWidget {
@@ -93,7 +93,7 @@ class BuildPromoBanners extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(

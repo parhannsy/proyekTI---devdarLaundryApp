@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class BuildMonthlySavings extends StatelessWidget {
@@ -16,7 +16,7 @@ class BuildMonthlySavings extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColor.shadow.withOpacity(0.05),
+              color: AppColor.shadow.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

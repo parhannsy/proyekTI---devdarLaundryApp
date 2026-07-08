@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class ActiveMissionCard extends StatelessWidget {
@@ -28,7 +28,7 @@ class ActiveMissionCard extends StatelessWidget {
         border: Border.all(color: Colors.blue.shade50),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )

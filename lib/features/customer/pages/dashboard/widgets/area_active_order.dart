@@ -25,7 +25,7 @@ class BuildActiveOrdersSection extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Text(
+                  const Text(
                     'Lihat Semua',
                     style: TextStyle(
                       fontSize: 12,
@@ -33,7 +33,7 @@ class BuildActiveOrdersSection extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
                     size: 16,
                     color: AppColor.primary,
@@ -43,7 +43,7 @@ class BuildActiveOrdersSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          BuildOrderCard(
+          const OrderCard(
             orderId: 'ORD-2024-042',
             item: 'Paket',
             quantity: '3.5 kg',
@@ -52,7 +52,7 @@ class BuildActiveOrdersSection extends StatelessWidget {
             progress: 0.6,
           ),
           const SizedBox(height: 12),
-          BuildOrderCard(
+          const OrderCard(
             orderId: 'ORD-2024-041',
             item: 'Karpet',
             quantity: '2 pcs',

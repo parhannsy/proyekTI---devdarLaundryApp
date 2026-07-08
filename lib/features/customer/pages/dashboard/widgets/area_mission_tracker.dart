@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class BuildOngoingMissions extends StatelessWidget {
@@ -27,7 +27,7 @@ class BuildOngoingMissions extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColor.shadow.withOpacity(0.05),
+                  color: AppColor.shadow.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -40,7 +40,7 @@ class BuildOngoingMissions extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColor.warning.withOpacity(0.1),
+                        color: AppColor.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(

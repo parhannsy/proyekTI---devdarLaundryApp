@@ -1,5 +1,5 @@
 name: devdar_laundry_pos_app
-description: "A new Flutter project."
+description: "Devdara Laundry POS - Aplikasi kasir laundry UMKM dengan fitur lengkap."
 publish_to: 'none'
 version: 0.1.0
 
@@ -9,6 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # State Management
+  provider: ^6.1.2
+
+  # Navigation
+  go_router: ^14.6.3
+
+  # UI Utilities
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

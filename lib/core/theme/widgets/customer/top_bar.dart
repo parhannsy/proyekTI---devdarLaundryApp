@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 
 class FloatingTopbar extends StatelessWidget {
@@ -57,7 +57,7 @@ class FloatingTopbar extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -128,7 +128,7 @@ class FloatingTopbar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(

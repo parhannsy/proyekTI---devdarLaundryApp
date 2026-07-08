@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AvailableMissionCard extends StatelessWidget {
@@ -20,7 +20,7 @@ class AvailableMissionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLocked ? Colors.grey.shade50.withOpacity(0.5) : Colors.white,
+        color: isLocked ? Colors.grey.shade50.withValues(alpha: 0.5) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.blue.shade50),
       ),
