@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "565645798732",
+    "project_id": "devadarlaundrydb",
+    "storage_bucket": "devadarlaundrydb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:565645798732:android:7ba8ffc3578b659ce7f3e9",
+        "android_client_info": {
+          "package_name": "com.example.devdar_laundry_pos_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARc3S2uLcwqhJRa7IOi-83xqL4ZrCeDco"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:565645798732:android:af34e1b8c37fb0e8e7f3e9",
+        "android_client_info": {
+          "package_name": "devdara.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARc3S2uLcwqhJRa7IOi-83xqL4ZrCeDco"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

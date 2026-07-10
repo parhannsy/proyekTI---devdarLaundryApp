@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:devdar_laundry_pos_app/core/theme/formatter/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/mini_stat_card.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_empty_state.dart';
@@ -107,14 +108,14 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _MiniStatCard(
+                  MiniStatCard(
                     label: 'Total',
                     value: '${_customers.length}',
                     icon: Icons.people_outline,
                     color: AppColor.primary,
                   ),
                   const SizedBox(width: 10),
-                  _MiniStatCard(
+                  MiniStatCard(
                     label: 'Gold',
                     value:
                         '${_customers.where((c) => c.tier == "Gold").length}',
@@ -122,7 +123,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                     color: const Color(0xFFFFD700),
                   ),
                   const SizedBox(width: 10),
-                  _MiniStatCard(
+                  MiniStatCard(
                     label: 'Silver',
                     value:
                         '${_customers.where((c) => c.tier == "Silver").length}',
@@ -130,7 +131,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                     color: Colors.grey,
                   ),
                   const SizedBox(width: 10),
-                  _MiniStatCard(
+                  MiniStatCard(
                     label: 'Bronze',
                     value:
                         '${_customers.where((c) => c.tier == "Bronze").length}',
@@ -461,55 +462,6 @@ class _CustomerDetailSheet extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Mini Stat Card ───────────────────────────────────────────────────────────
-
-class _MiniStatCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-
-  const _MiniStatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColor.textSecondary,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

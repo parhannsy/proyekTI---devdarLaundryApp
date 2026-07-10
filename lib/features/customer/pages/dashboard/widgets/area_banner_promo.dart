@@ -1,4 +1,5 @@
 ﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class BuildPromoBanners extends StatelessWidget {
@@ -59,15 +60,14 @@ class BuildPromoBanners extends StatelessWidget {
     Gradient? gradient,
     Color? color,
   }) {
-    return Container(
-      width: width,
-      height: height, // KUNCI: Tinggi dipatok seragam di sini
+    return ClayContainer(
+      radius: 16,
+      elevation: 4,
+      surfaceColor: color ?? AppColor.surface,
+      gradient: gradient,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color,
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      width: width,
+      height: height,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

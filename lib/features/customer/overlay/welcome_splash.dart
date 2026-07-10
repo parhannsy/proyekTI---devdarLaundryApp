@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 
 class WelcomeSplashPage extends StatefulWidget {
   const WelcomeSplashPage({super.key});
@@ -104,12 +105,11 @@ class _WelcomeSplashPageState extends State<WelcomeSplashPage>
                     opacity: _logoFade,
                     child: ScaleTransition(
                       scale: _logoScale,
-                      child: Container(
+                      child: ClayContainer(
+                        radius: 14,
+                        elevation: 5,
+                        surfaceColor: AppColor.primary,
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColor.primary,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
                         child: const Icon(
                           Icons.water_drop_outlined,
                           color: Colors.white,
@@ -185,26 +185,33 @@ class _WelcomeSplashPageState extends State<WelcomeSplashPage>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
+
+                  // Tombol claymorphism
+                  ClayContainer(
+                    radius: 16,
+                    elevation: 5,
+                    surfaceColor: AppColor.primary,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColor.primary, AppColor.primaryDark],
+                    ),
+                    padding: EdgeInsets.zero,
                     width: double.infinity,
                     height: 54,
-                    child: ElevatedButton(
-                      onPressed: _next,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColor.primary,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        _currentPage < _features.length - 1
-                            ? 'Selanjutnya'
-                            : 'Mulai Sekarang',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    child: InkWell(
+                      onTap: _next,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Center(
+                        child: Text(
+                          _currentPage < _features.length - 1
+                              ? 'Selanjutnya'
+                              : 'Mulai Sekarang',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -232,27 +239,21 @@ class _FeaturePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Ilustrasi ikon
-          Container(
-            width: screenHeight * 0.22,
-            height: screenHeight * 0.22,
-            decoration: BoxDecoration(
-              color: feature.color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Container(
-                width: screenHeight * 0.14,
-                height: screenHeight * 0.14,
-                decoration: BoxDecoration(
-                  color: feature.color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  feature.icon,
-                  color: feature.color,
-                  size: screenHeight * 0.07,
-                ),
+          // Ilustrasi ikon — claymorphism layered circles
+          ClayContainer(
+            radius: screenHeight * 0.11,
+            elevation: 6,
+            surfaceColor: feature.color.withValues(alpha: 0.1),
+            padding: const EdgeInsets.all(24),
+            child: ClayContainer(
+              radius: screenHeight * 0.07,
+              elevation: 4,
+              surfaceColor: feature.color.withValues(alpha: 0.15),
+              padding: EdgeInsets.all(screenHeight * 0.035),
+              child: Icon(
+                feature.icon,
+                color: feature.color,
+                size: screenHeight * 0.07,
               ),
             ),
           ),

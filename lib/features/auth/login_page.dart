@@ -6,6 +6,7 @@ import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/models/user_model.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,11 +22,11 @@ class _LoginPageState extends State<LoginPage>
   final _passwordController = TextEditingController();
   bool _isObscure = true;
 
+  // Animasi entrance bertahap ala claymorphism
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  // Demo credential hints
   static const _hints = [
     _CredentialHint(
       label: 'Customer Demo',
@@ -106,10 +107,7 @@ class _LoginPageState extends State<LoginPage>
             child: IntrinsicHeight(
               child: Column(
                 children: [
-                  // ── Header area ───────────────────────────────
                   _buildHeader(isSmall),
-
-                  // ── Form card ─────────────────────────────────
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnim,
@@ -129,7 +127,16 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildHeader(bool isSmall) {
-    return Container(
+    return ClayContainer(
+      radius: 40,
+      elevation: 6,
+      pressed: false,
+      surfaceColor: AppColor.primary,
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppColor.primary, AppColor.primaryDark],
+      ),
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         24,
@@ -137,22 +144,15 @@ class _LoginPageState extends State<LoginPage>
         24,
         isSmall ? 24 : 40,
       ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColor.primary, AppColor.primaryDark],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
-      ),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
-          Container(
+          // Logo dengan clay effect
+          ClayContainer(
+            radius: 20,
+            elevation: 5,
+            surfaceColor: Colors.white.withValues(alpha: 0.2),
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: const Icon(
               Icons.water_drop_outlined,
               color: Colors.white,
@@ -181,28 +181,20 @@ class _LoginPageState extends State<LoginPage>
 
   Widget _buildFormCard(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Demo credential chips
+          // Demo credential chips — claymorphism style
           _buildDemoChips(),
           const SizedBox(height: 20),
 
-          // Form
-          Container(
+          // Form card utama — claymorphism raised
+          ClayContainer(
+            radius: 24,
+            elevation: 6,
+            surfaceColor: AppColor.surface,
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColor.surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -226,22 +218,19 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   const SizedBox(height: 24),
 
-                  // Email
                   _buildTextField(
                     controller: _emailController,
                     hint: 'Email',
                     icon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return 'Email wajib diisi';
+                      if (val == null || val.isEmpty) return 'Email wajib diisi';
                       if (!val.contains('@')) return 'Format email tidak valid';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Password
                   _buildTextField(
                     controller: _passwordController,
                     hint: 'Password',
@@ -256,8 +245,7 @@ class _LoginPageState extends State<LoginPage>
                       onPressed: () => setState(() => _isObscure = !_isObscure),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return 'Password wajib diisi';
+                      if (val == null || val.isEmpty) return 'Password wajib diisi';
                       if (val.length < 6) return 'Password minimal 6 karakter';
                       return null;
                     },
@@ -266,18 +254,17 @@ class _LoginPageState extends State<LoginPage>
                   // Error message
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
-                      if (auth.errorMessage == null)
-                        return const SizedBox.shrink();
+                      if (auth.errorMessage == null) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(top: 12),
-                        child: Container(
+                        child: ClayContainer(
+                          radius: 10,
+                          elevation: 2,
+                          pressed: true,
+                          surfaceColor: AppColor.error.withValues(alpha: 0.08),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColor.error.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             children: [
@@ -305,51 +292,60 @@ class _LoginPageState extends State<LoginPage>
 
                   const SizedBox(height: 24),
 
-                  // Submit button
+                  // Submit button — claymorphism
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
                       final isLoading = auth.status == AuthStatus.loading;
-                      return SizedBox(
+                      return ClayContainer(
+                        radius: 14,
+                        elevation: isLoading ? 2 : 5,
+                        pressed: isLoading,
+                        surfaceColor: AppColor.primary,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isLoading
+                              ? [
+                                  AppColor.primary.withValues(alpha: 0.8),
+                                  AppColor.primaryDark.withValues(alpha: 0.8),
+                                ]
+                              : [AppColor.primary, AppColor.primaryDark],
+                        ),
+                        padding: EdgeInsets.zero,
                         height: 52,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColor.primary,
-                            disabledBackgroundColor: AppColor.primary
-                                .withOpacity(0.6),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Masuk',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(
-                                      Icons.arrow_forward,
+                        child: InkWell(
+                          onTap: isLoading ? null : _handleLogin,
+                          borderRadius: BorderRadius.circular(14),
+                          child: Center(
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
                                       color: Colors.white,
-                                      size: 18,
+                                      strokeWidth: 2.5,
                                     ),
-                                  ],
-                                ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Masuk',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(
+                                        Icons.arrow_forward,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                          ),
                         ),
                       );
                     },
@@ -380,18 +376,14 @@ class _LoginPageState extends State<LoginPage>
                   child: InkWell(
                     onTap: () => _fillCredential(hint),
                     borderRadius: BorderRadius.circular(20),
-                    child: Container(
+                    child: ClayContainer(
+                      radius: 20,
+                      elevation: 3,
+                      surfaceColor: hint.color.withValues(alpha: 0.08),
+                      borderColor: hint.color.withValues(alpha: 0.3),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: hint.color.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: hint.color.withOpacity(0.3),
-                          width: 1,
-                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

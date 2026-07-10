@@ -1,4 +1,5 @@
 ﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class ActiveMissionCard extends StatelessWidget {
@@ -19,22 +20,14 @@ class ActiveMissionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     double progressPercent = totalProgress > 0 ? (currentProgress / totalProgress) : 0.0;
 
-    return Container(
+    return ClayContainer(
+      radius: 20,
+      elevation: 4,
+      surfaceColor: Colors.white,
+      borderColor: Colors.blue.shade50,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       width: 280,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.shade50),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

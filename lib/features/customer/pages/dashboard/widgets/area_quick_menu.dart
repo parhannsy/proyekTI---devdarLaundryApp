@@ -1,4 +1,5 @@
-﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class BuildQuickActions extends StatelessWidget {
@@ -6,79 +7,67 @@ class BuildQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Data dummy untuk menu cepat
     final actions = [
       {
-        'icon': Icons.add_circle_outline, 
-        'label': 'Order Baru', 
+        'icon': Icons.add_circle_outline,
+        'label': 'Order Baru',
         'color': AppColor.primary
       },
       {
-        'icon': Icons.history, 
-        'label': 'Riwayat', 
+        'icon': Icons.history,
+        'label': 'Riwayat',
         'color': AppColor.primary
       },
       {
-        'icon': Icons.confirmation_number_outlined, 
-        'label': 'Diskon Saya', 
+        'icon': Icons.confirmation_number_outlined,
+        'label': 'Diskon Saya',
         'color': AppColor.success
       },
       {
-        'icon': Icons.people_outline, 
-        'label': 'Afiliasi', 
+        'icon': Icons.people_outline,
+        'label': 'Afiliasi',
         'color': AppColor.primary
       },
     ];
 
     return Padding(
-      // Menggunakan padding top kecil (misal: 12) untuk memberi napas dengan TopBar
-      // tanpa membuat gap yang aneh seperti penggunaan Transform.translate
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
-        // Penting: agar tidak konflik dengan scroll CustomScrollView utama
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, 
-          crossAxisSpacing: 12, // Dikurangi sedikit agar lebih rapat dan pas di layar kecil
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.9, // Disesuaikan agar teks di bawah ikon tidak terpotong
+          childAspectRatio: 0.9,
         ),
         itemCount: actions.length,
         itemBuilder: (context, index) {
           final action = actions[index];
-          
+          final color = action['color'] as Color;
+
           return InkWell(
             onTap: () {
-              // TODO: Implementasi navigasi ke masing-masing menu
               debugPrint('Menu ${action['label']} diklik');
             },
             borderRadius: BorderRadius.circular(16),
-            child: Container(
+            child: ClayContainer(
+              radius: 16,
+              elevation: 4,
+              surfaceColor: AppColor.surface,
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColor.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColor.shadow.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (action['color'] as Color).withValues(alpha: 0.1),
+                      color: color.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       action['icon'] as IconData,
-                      color: action['color'] as Color,
+                      color: color,
                       size: 24,
                     ),
                   ),

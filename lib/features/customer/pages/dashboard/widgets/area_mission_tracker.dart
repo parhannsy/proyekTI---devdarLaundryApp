@@ -1,4 +1,5 @@
 ﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class BuildOngoingMissions extends StatelessWidget {
@@ -20,19 +21,11 @@ class BuildOngoingMissions extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
+          ClayContainer(
+            radius: 16,
+            elevation: 4,
+            surfaceColor: AppColor.surface,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColor.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColor.shadow.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
             child: Column(
               children: [
                 Row(

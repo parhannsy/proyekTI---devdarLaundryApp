@@ -1,4 +1,5 @@
 ﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class BuildMonthlySavings extends StatelessWidget {
@@ -8,20 +9,11 @@ class BuildMonthlySavings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Container(
-        width: double.infinity,
+      child: ClayContainer(
+        radius: 16,
+        elevation: 4,
+        surfaceColor: AppColor.surface,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColor.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.shadow.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

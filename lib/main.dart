@@ -2,13 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_options.dart';
 import 'core/providers/providers.dart';
-import 'core/data/mock_data.dart';
+import 'core/data/firebase/firebase_data.dart';
+import 'core/data/firebase/seed_service.dart';
 import 'core/router/app_router.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Inisialisasi Firebase ───────────────────────────────────
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // ── Seed data awal (hanya sekali) ───────────────────────────
+    await SeedService.seedIfNeeded();
+  } catch (e) {
+    debugPrint('[Main] Firebase init skipped: $e');
+    // Graceful fallback — UI tetap jalan walau Firebase gagal
+  }
 
   // Mengunci orientasi agar konsisten di semua device
   SystemChrome.setPreferredOrientations([
@@ -35,32 +50,32 @@ class DevdaraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ── Dependency injection via MultiProvider ────────────────────────────────
-    // Urutan: repository (mock) → provider yang bergantung pada repository
+    // Urutan: repository (Firebase) → provider yang bergantung pada repository
     return MultiProvider(
       providers: [
         // Auth
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(MockAuthRepository()),
+          create: (_) => AuthProvider(FirebaseAuthRepository()),
         ),
         // Order
         ChangeNotifierProvider(
-          create: (_) => OrderProvider(MockOrderRepository()),
+          create: (_) => OrderProvider(FirebaseOrderRepository()),
         ),
         // Voucher
         ChangeNotifierProvider(
-          create: (_) => VoucherProvider(MockVoucherRepository()),
+          create: (_) => VoucherProvider(FirebaseVoucherRepository()),
         ),
         // Mission
         ChangeNotifierProvider(
-          create: (_) => MissionProvider(MockMissionRepository()),
+          create: (_) => MissionProvider(FirebaseMissionRepository()),
         ),
         // Customer
         ChangeNotifierProvider(
-          create: (_) => CustomerProvider(MockCustomerRepository()),
+          create: (_) => CustomerProvider(FirebaseCustomerRepository()),
         ),
         // Report
         ChangeNotifierProvider(
-          create: (_) => ReportProvider(MockReportRepository()),
+          create: (_) => ReportProvider(FirebaseReportRepository()),
         ),
       ],
       child: const _RouterRoot(),

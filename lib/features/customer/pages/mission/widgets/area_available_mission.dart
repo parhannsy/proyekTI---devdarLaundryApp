@@ -1,4 +1,5 @@
 ﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class AvailableMissionCard extends StatelessWidget {
@@ -16,14 +17,13 @@ class AvailableMissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ClayContainer(
+      radius: 20,
+      elevation: 4,
+      surfaceColor: isLocked ? Colors.grey.shade50.withValues(alpha: 0.5) : Colors.white,
+      borderColor: Colors.blue.shade50,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isLocked ? Colors.grey.shade50.withValues(alpha: 0.5) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.shade50),
-      ),
       child: Row(
         children: [
           Icon(icon, color: isLocked ? Colors.grey : AppColor.primary, size: 28),
@@ -44,7 +44,7 @@ class AvailableMissionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColor.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(

@@ -2,7 +2,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:devdar_laundry_pos_app/core/theme/formatter/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';

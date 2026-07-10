@@ -1,6 +1,7 @@
-import 'package:devdar_laundry_pos_app/core/data/model/order/order_model.dart';
+import 'package:devdar_laundry_pos_app/features/customer/pages/order/models/order_models.dart';
 import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 
 
 /// 1. Top Tracker Indicator Layer
@@ -10,19 +11,11 @@ class OrderStepTracker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ClayContainer(
+      radius: 16,
+      elevation: 3,
+      surfaceColor: Colors.white,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -80,7 +73,7 @@ class ServiceCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isSelected ? 0.06 : 0.02),
+              color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.02),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -149,7 +142,7 @@ class VoucherCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -181,7 +174,7 @@ class VoucherCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: voucher.badgeColor.withOpacity(0.1),
+                color: voucher.badgeColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(

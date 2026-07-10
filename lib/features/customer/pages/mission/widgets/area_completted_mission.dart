@@ -1,3 +1,4 @@
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class CompletedMissionCard extends StatelessWidget {
@@ -11,14 +12,13 @@ class CompletedMissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ClayContainer(
+      radius: 20,
+      elevation: 4,
+      surfaceColor: Colors.white,
+      borderColor: Colors.blue.shade50,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.shade50),
-      ),
       child: Row(
         children: [
           const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 28),

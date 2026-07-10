@@ -1,5 +1,7 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/mini_stat_card.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -190,89 +192,30 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StatCard(
+        MiniStatCard(
           label: 'Poin',
           value: '320',
           icon: Icons.star_rounded,
           color: AppColor.warning,
+          showIconBackground: true,
         ),
         const SizedBox(width: 12),
-        _StatCard(
+        MiniStatCard(
           label: 'Total Hemat',
           value: 'Rp 125K',
           icon: Icons.savings_outlined,
           color: AppColor.success,
+          showIconBackground: true,
         ),
         const SizedBox(width: 12),
-        _StatCard(
+        MiniStatCard(
           label: 'Order',
           value: '14x',
           icon: Icons.inventory_2_outlined,
           color: AppColor.primary,
+          showIconBackground: true,
         ),
       ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColor.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColor.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -297,13 +240,12 @@ class _ProfileMenuItem extends StatelessWidget {
     final itemColor = color ?? AppColor.textPrimary;
     return InkWell(
       onTap: onTap,
-      child: Container(
+      child: ClayContainer(
+        radius: 14,
+        elevation: 3,
+        surfaceColor: AppColor.surface,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColor.surface,
-          borderRadius: BorderRadius.circular(14),
-        ),
         child: Row(
           children: [
             Icon(icon, color: itemColor, size: 22),

@@ -1,4 +1,4 @@
-import 'package:devdar_laundry_pos_app/core/theme/formatter/animated_fade_slider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/mission/widgets/area_active_mission.dart';
 import 'package:devdar_laundry_pos_app/features/customer/pages/mission/widgets/area_available_mission.dart';
