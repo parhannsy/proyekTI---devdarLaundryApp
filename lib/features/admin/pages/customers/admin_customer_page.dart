@@ -413,127 +413,166 @@ class _CustomerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onDetail,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColor.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColor.primary.withValues(alpha: 0.1),
-              child: Text(
-                customer.name.isNotEmpty
-                    ? customer.name.substring(0, 1).toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  color: AppColor.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColor.primary.withValues(alpha: 0.1),
+                child: Text(
+                  customer.name.isNotEmpty
+                      ? customer.name.substring(0, 1).toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    color: AppColor.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          customer.name.isNotEmpty ? customer.name : '(Tanpa Nama)',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppColor.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: tierColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          tier,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: tierColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    customer.email,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColor.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    customer.phone.isNotEmpty ? customer.phone : '-',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColor.textMuted,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+
+              const SizedBox(width: 14),
+
+              // Informasi utama
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 14,
-                      color: AppColor.warning,
-                    ),
-                    const SizedBox(width: 2),
                     Text(
-                      '${customer.loyaltyPoints}',
+                      customer.name.isNotEmpty
+                          ? customer.name
+                          : '(Tanpa Nama)',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppColor.warning,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColor.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      customer.email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColor.textSecondary,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      customer.phone.isNotEmpty ? customer.phone : '-',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColor.textMuted,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Tier & poin (fixed width supaya sejajar)
+              SizedBox(
+                width: 74,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tierColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        tier,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: tierColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 15,
+                          color: AppColor.warning,
+                        ),
+                        const SizedBox(width: 3),
+                        Flexible(
+                          child: Text(
+                            '${customer.loyaltyPoints}',
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColor.warning,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 1),
+
+                    const Text(
+                      'poin',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColor.textMuted,
                       ),
                     ),
                   ],
                 ),
-                const Text(
-                  'poin',
-                  style: TextStyle(fontSize: 10, color: AppColor.textMuted),
-                ),
-              ],
-            ),
-          ],
+              ),
+
+              const SizedBox(width: 6),
+
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColor.textMuted,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -576,13 +615,14 @@ class _CustomerDetailSheet extends StatelessWidget {
             ),
           ),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               CircleAvatar(
-                radius: 32,
+                radius: 34,
                 backgroundColor: AppColor.primary.withValues(alpha: 0.1),
                 child: Text(
                   customer.name.isNotEmpty
-                      ? customer.name.substring(0, 1)
+                      ? customer.name.substring(0, 1).toUpperCase()
                       : '?',
                   style: const TextStyle(
                     color: AppColor.primary,
@@ -591,25 +631,34 @@ class _CustomerDetailSheet extends StatelessWidget {
                   ),
                 ),
               ),
+
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    customer.name.isNotEmpty ? customer.name : '(Tanpa Nama)',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customer.name.isNotEmpty
+                          ? customer.name
+                          : '(Tanpa Nama)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Bergabung ${dateFormat.format(customer.createdAt)}',
-                    style: const TextStyle(
-                      color: AppColor.textSecondary,
-                      fontSize: 13,
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      'Bergabung ${dateFormat.format(customer.createdAt)}',
+                      style: const TextStyle(
+                        color: AppColor.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -646,26 +695,46 @@ class _CustomerDetailSheet extends StatelessWidget {
 
   Widget _row(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppColor.primary),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, color: AppColor.textSecondary),
+          Container(
+            width: 32,
+            alignment: Alignment.topLeft,
+            child: Icon(icon, size: 18, color: AppColor.primary),
           ),
-          const Spacer(),
-          Flexible(
+
+          const SizedBox(width: 10),
+
+          SizedBox(
+            width: 88,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColor.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          const Text(
+            ': ',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColor.textSecondary,
+            ),
+          ),
+
+          Expanded(
             child: Text(
               value,
-              textAlign: TextAlign.end,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColor.textPrimary,
+                height: 1.35,
               ),
             ),
           ),

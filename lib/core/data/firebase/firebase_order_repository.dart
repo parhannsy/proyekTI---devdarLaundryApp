@@ -21,28 +21,26 @@ class FirebaseOrderRepository implements OrderRepository {
   Future<List<OrderModel>> getOrdersByCustomer(String customerId) async {
     final snapshot = await _orders
         .where('customerId', isEqualTo: customerId)
-        .orderBy('createdAt', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => _orderFromDoc(doc)).toList();
+    final orders =
+        snapshot.docs.map((doc) => _orderFromDoc(doc)).toList();
+    orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return orders;
   }
 
   @override
   Future<List<OrderModel>> getActiveOrdersByCustomer(String customerId) async {
     final snapshot = await _orders
         .where('customerId', isEqualTo: customerId)
-        .where('status', whereIn: [
-          OrderStatus.pending.name,
-          OrderStatus.received.name,
-          OrderStatus.washing.name,
-          OrderStatus.drying.name,
-          OrderStatus.ironing.name,
-          OrderStatus.ready.name,
-        ])
-        .orderBy('createdAt', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => _orderFromDoc(doc)).toList();
+    final orders = snapshot.docs
+        .map((doc) => _orderFromDoc(doc))
+        .where((o) => o.status.isActive)
+        .toList();
+    orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return orders;
   }
 
   @override
@@ -62,13 +60,47 @@ class FirebaseOrderRepository implements OrderRepository {
 
   @override
   Future<OrderModel> updateOrderStatus(String id, OrderStatus status) async {
-    await _orders.doc(id).update({
+    final updates = <String, dynamic>{
       'status': status.name,
-      if (status == OrderStatus.delivered) 'completedAt': DateTime.now(),
-    });
+    };
+    if (status == OrderStatus.completed) {
+      updates['completedAt'] = DateTime.now();
+    }
 
+    await _orders.doc(id).update(updates);
     final doc = await _orders.doc(id).get();
     return _orderFromDoc(doc);
+  }
+
+  @override
+  Future<OrderModel> acceptOrder(String id,
+      {required double estimatedTotal}) async {
+    await _orders.doc(id).update({
+      'status': OrderStatus.accepted.name,
+      'estimatedTotal': estimatedTotal,
+    });
+    final doc = await _orders.doc(id).get();
+    return _orderFromDoc(doc);
+  }
+
+  @override
+  Future<OrderModel> rejectOrder(String id,
+      {required String reason}) async {
+    await _orders.doc(id).update({
+      'status': OrderStatus.rejected.name,
+      'rejectionReason': reason,
+    });
+    final doc = await _orders.doc(id).get();
+    return _orderFromDoc(doc);
+  }
+
+  @override
+  Stream<List<OrderModel>> streamAllOrders() {
+    return _orders
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => _orderFromDoc(doc)).toList());
   }
 
   @override
@@ -82,18 +114,20 @@ class FirebaseOrderRepository implements OrderRepository {
       id: doc.id,
       customerId: data['customerId'] ?? '',
       customerName: data['customerName'] ?? '',
+      customerAddress: data['customerAddress'] ?? '',
       category: _parseCategory(data['category']),
-      weight: (data['weight'] ?? 0).toDouble(),
-      quantity: data['quantity'] ?? 1,
+      itemName: data['itemName'] ?? '',
+      unitType: _parseUnitType(data['unitType']),
+      quantity: (data['quantity'] ?? 0).toDouble(),
       status: _parseStatus(data['status']),
       totalPrice: (data['totalPrice'] ?? 0).toDouble(),
       discount: (data['discount'] ?? 0).toDouble(),
       voucherCode: data['voucherCode'],
       notes: data['notes'],
+      pickupDate: (data['pickupDate'] as Timestamp).toDate(),
+      rejectionReason: data['rejectionReason'],
+      estimatedTotal: (data['estimatedTotal'] as num?)?.toDouble(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      estimatedDoneAt: data['estimatedDoneAt'] != null
-          ? (data['estimatedDoneAt'] as Timestamp).toDate()
-          : null,
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
           : null,
@@ -104,16 +138,20 @@ class FirebaseOrderRepository implements OrderRepository {
     return {
       'customerId': order.customerId,
       'customerName': order.customerName,
+      'customerAddress': order.customerAddress,
       'category': order.category.name,
-      'weight': order.weight,
+      'itemName': order.itemName,
+      'unitType': order.unitType.name,
       'quantity': order.quantity,
       'status': order.status.name,
       'totalPrice': order.totalPrice,
       'discount': order.discount,
       'voucherCode': order.voucherCode,
       'notes': order.notes,
+      'pickupDate': order.pickupDate,
+      'rejectionReason': order.rejectionReason,
+      'estimatedTotal': order.estimatedTotal,
       'createdAt': order.createdAt,
-      'estimatedDoneAt': order.estimatedDoneAt,
       'completedAt': order.completedAt,
     };
   }
@@ -125,10 +163,17 @@ class FirebaseOrderRepository implements OrderRepository {
     );
   }
 
+  UnitType _parseUnitType(String? value) {
+    return UnitType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => UnitType.kiloan,
+    );
+  }
+
   OrderStatus _parseStatus(String? value) {
     return OrderStatus.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => OrderStatus.pending,
+      orElse: () => OrderStatus.request,
     );
   }
 }

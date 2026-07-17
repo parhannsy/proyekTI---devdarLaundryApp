@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../repositories/order_repository.dart';
@@ -9,6 +10,7 @@ class OrderProvider extends ChangeNotifier {
   List<OrderModel> _activeOrders = [];
   bool _isLoading = false;
   String? _errorMessage;
+  StreamSubscription<List<OrderModel>>? _streamSub;
 
   OrderProvider(this._repository);
 
@@ -16,6 +18,40 @@ class OrderProvider extends ChangeNotifier {
   List<OrderModel> get activeOrders => _activeOrders;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // ── Stream (Admin - realtime) ─────────────────────────────
+
+  /// Mulai mendengarkan stream realtime dari Firestore.
+  /// Setiap ada perubahan data, `_orders` akan otomatis update
+  /// dan Consumer di UI akan rebuild.
+  void listenAllOrders() {
+    // Cancel subscription sebelumnya jika ada (mencegah duplikasi)
+    _streamSub?.cancel();
+
+    _isLoading = true;
+    notifyListeners();
+
+    _streamSub = _repository.streamAllOrders().listen(
+      (updatedOrders) {
+        _orders = updatedOrders;
+        _errorMessage = null;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (Object error) {
+        _errorMessage = error.toString();
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('[OrderProvider] Stream error: $error');
+      },
+    );
+  }
+
+  /// Hentikan stream — panggil saat widget di-dispose.
+  void stopListening() {
+    _streamSub?.cancel();
+    _streamSub = null;
+  }
 
   // ── Admin ──────────────────────────────────────────────────
 
@@ -30,14 +66,33 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  /// Admin menerima permohonan & memberikan estimasi biaya.
+  Future<void> acceptRequest(String orderId, {required double estimatedTotal}) async {
+    try {
+      final updated = await _repository.acceptOrder(orderId, estimatedTotal: estimatedTotal);
+      _replaceInList(updated);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Admin menolak permohonan dengan alasan.
+  Future<void> rejectRequest(String orderId, {required String reason}) async {
+    try {
+      final updated = await _repository.rejectOrder(orderId, reason: reason);
+      _replaceInList(updated);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Admin mengupdate status order ke tahap berikutnya.
   Future<void> updateStatus(String orderId, OrderStatus status) async {
     try {
       final updated = await _repository.updateOrderStatus(orderId, status);
-      final index = _orders.indexWhere((o) => o.id == orderId);
-      if (index != -1) {
-        _orders[index] = updated;
-        notifyListeners();
-      }
+      _replaceInList(updated);
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -79,21 +134,61 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  /// Customer menyetujui estimasi biaya → status berubah ke pickedUp.
+  /// Return true jika berhasil, false jika gagal.
+  Future<bool> agreeToOrder(String orderId) async {
+    try {
+      final updated = await _repository.updateOrderStatus(orderId, OrderStatus.pickedUp);
+      _replaceInList(updated);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Customer membatalkan order.
+  /// Return true jika berhasil, false jika gagal.
+  Future<bool> cancelOrder(String orderId) async {
+    try {
+      final updated = await _repository.updateOrderStatus(orderId, OrderStatus.cancelled);
+      _replaceInList(updated);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Membuat order baru (dari customer).
+  Future<OrderModel?> createOrder(OrderModel order) async {
+    try {
+      final created = await _repository.createOrder(order);
+      _orders.insert(0, created);
+      notifyListeners();
+      return created;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   // ── Summary helpers ────────────────────────────────────────
 
   int get pendingCount =>
-      _orders.where((o) => o.status == OrderStatus.pending).length;
+      _orders.where((o) => o.status == OrderStatus.request).length;
 
-  int get processingCount => _orders
-      .where((o) =>
-          o.status == OrderStatus.received ||
-          o.status == OrderStatus.washing ||
-          o.status == OrderStatus.drying ||
-          o.status == OrderStatus.ironing)
-      .length;
+  int get processingCount =>
+      _orders.where((o) => o.status == OrderStatus.processing).length;
+
+  int get deliveringCount =>
+      _orders.where((o) => o.status == OrderStatus.delivering).length;
 
   int get readyCount =>
-      _orders.where((o) => o.status == OrderStatus.ready).length;
+      _orders.where((o) => o.status == OrderStatus.accepted).length;
 
   double get todayRevenue {
     final today = DateTime.now();
@@ -104,6 +199,16 @@ class OrderProvider extends ChangeNotifier {
             o.completedAt!.month == today.month &&
             o.completedAt!.day == today.day)
         .fold(0.0, (sum, o) => sum + o.finalPrice);
+  }
+
+  // ── Internal helpers ───────────────────────────────────────
+
+  void _replaceInList(OrderModel updated) {
+    final index = _orders.indexWhere((o) => o.id == updated.id);
+    if (index != -1) {
+      _orders[index] = updated;
+      notifyListeners();
+    }
   }
 
   void _setLoading(bool value) {

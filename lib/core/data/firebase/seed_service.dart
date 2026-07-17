@@ -94,6 +94,8 @@ class SeedService {
       'loyaltyPoints': loyaltyPoints,
       'totalSavings': totalSavings,
       'hasSeenSplash': role == 'customer', // customer seeding skip splash
+      'isProfileComplete': true,
+      'address': role == 'customer' ? 'Jl. Merdeka No. 10, Jakarta Pusat' : '',
       'createdAt': joinDate,
     });
 
@@ -117,6 +119,8 @@ class SeedService {
         'phone': email == _customerEmail ? '081234567890' : '089876543210',
         'role': email == _customerEmail ? 'customer' : 'admin',
         'hasSeenSplash': email == _customerEmail, // customer skip splash
+        'isProfileComplete': true,
+        'address': email == _customerEmail ? 'Jl. Merdeka No. 10, Jakarta Pusat' : '',
         'loyaltyPoints': email == _customerEmail ? 320 : 0,
         'totalSavings': email == _customerEmail ? 125000 : 0,
         'createdAt': email == _customerEmail

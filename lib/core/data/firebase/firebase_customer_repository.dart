@@ -11,10 +11,13 @@ class FirebaseCustomerRepository implements CustomerRepository {
     final snapshot = await _firestore
         .collection('users')
         .where('role', isEqualTo: 'customer')
-        .orderBy('createdAt', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => _userFromDoc(doc)).toList();
+    final customers =
+        snapshot.docs.map((doc) => _userFromDoc(doc)).toList();
+    // Sortir di Dart untuk menghindari kebutuhan composite index Firestore
+    customers.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return customers;
   }
 
   @override

@@ -7,17 +7,26 @@ abstract class OrderRepository {
   /// Mengambil order milik satu customer.
   Future<List<OrderModel>> getOrdersByCustomer(String customerId);
 
-  /// Mengambil order yang sedang aktif (belum selesai) milik customer.
+  /// Mengambil order yang sedang aktif milik customer.
   Future<List<OrderModel>> getActiveOrdersByCustomer(String customerId);
 
   /// Mengambil detail satu order berdasarkan ID.
   Future<OrderModel?> getOrderById(String id);
 
-  /// Membuat order baru.
+  /// Membuat order baru (dari customer).
   Future<OrderModel> createOrder(OrderModel order);
 
-  /// Memperbarui status order (oleh admin).
+  /// Memperbarui status order.
   Future<OrderModel> updateOrderStatus(String id, OrderStatus status);
+
+  /// Admin menerima permohonan order + memberikan estimasi biaya.
+  Future<OrderModel> acceptOrder(String id, {required double estimatedTotal});
+
+  /// Admin menolak permohonan order dengan alasan.
+  Future<OrderModel> rejectOrder(String id, {required String reason});
+
+  /// Stream realtime untuk semua order (admin).
+  Stream<List<OrderModel>> streamAllOrders();
 
   /// Menghapus order (soft delete, oleh admin).
   Future<void> deleteOrder(String id);

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
 import 'core/providers/providers.dart';
@@ -19,6 +20,14 @@ bool firebaseAvailable = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Inisialisasi Locale Indonesia (untuk DateFormat & NumberFormat) ──
+  try {
+    await initializeDateFormatting('id', null);
+    debugPrint('[Main] 📅 Locale id berhasil diinisialisasi.');
+  } catch (e) {
+    debugPrint('[Main] ⚠️ Gagal init locale id: $e');
+  }
 
   // ── Inisialisasi Firebase ───────────────────────────────────
   // Di web: Firebase JS SDK sengaja tidak di-load (via flutterfire_ignore_scripts

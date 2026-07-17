@@ -17,34 +17,35 @@ service cloud.firestore {
     }
 
     // ── Users ───────────────────────────────────────────────
-    // Setiap user bisa baca & edit data dirinya sendiri
-    // Admin bisa akses semua user
     match /users/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
     }
 
     // ── Orders ──────────────────────────────────────────────
-    // Customer hanya bisa lihat order miliknya (customerId == uid)
-    // Admin bisa baca, buat, update, hapus semua order
+    // Customer: baca order sendiri, buat order sendiri, update status sendiri (agree/cancel)
+    // Admin: full akses
     match /orders/{orderId} {
       allow read: if isAuthenticated()
         && (resource.data.customerId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated()
         && (request.resource.data.customerId == request.auth.uid || isAdmin());
-      allow update, delete: if isAdmin();
+      // Customer hanya boleh update field 'status' pada order miliknya sendiri
+      // (untuk agree → pickedUp, cancel → cancelled)
+      // Admin boleh update apa saja
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && resource.data.customerId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if isAdmin();
     }
 
     // ── Missions ────────────────────────────────────────────
-    // Semua user terautentikasi bisa lihat misi
-    // Hanya admin yang bisa buat/ubah/hapus
     match /missions/{missionId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     // ── Mission Progress ────────────────────────────────────
-    // Customer hanya bisa baca & tulis progress miliknya
-    // Admin bisa akses semua
     match /mission_progress/{progressId} {
       allow read: if isAuthenticated()
         && (resource.data.customerId == request.auth.uid || isAdmin());
@@ -55,8 +56,6 @@ service cloud.firestore {
     }
 
     // ── Vouchers ────────────────────────────────────────────
-    // Semua user terautentikasi bisa lihat voucher
-    // Hanya admin yang bisa buat/ubah/hapus
     match /vouchers/{voucherId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();

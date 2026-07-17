@@ -22,14 +22,15 @@ class FirebaseVoucherRepository implements VoucherRepository {
     final now = DateTime.now();
     final snapshot = await _vouchers
         .where('isPublic', isEqualTo: true)
-        .where('validUntil', isGreaterThan: now)
-        .orderBy('validUntil', descending: false)
         .get();
 
-    return snapshot.docs
+    final vouchers = snapshot.docs
         .map((doc) => _voucherFromDoc(doc))
-        .where((v) => v.isAvailable)
+        .where((v) => v.isAvailable && v.validUntil.isAfter(now))
         .toList();
+    // Sortir di Dart untuk menghindari kebutuhan composite index Firestore
+    vouchers.sort((a, b) => a.validUntil.compareTo(b.validUntil));
+    return vouchers;
   }
 
   @override

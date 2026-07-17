@@ -1,3 +1,5 @@
+import 'package:devdar_laundry_pos_app/core/models/models.dart';
+import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_bar.dart';
@@ -10,8 +12,27 @@ import 'widgets/area_mission_tracker.dart';
 import 'widgets/area_banner_promo.dart';
 import 'widgets/area_quick_menu.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  void _loadOrders() {
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user != null) {
+      context.read<OrderProvider>().loadCustomerOrders(user.id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,71 +46,86 @@ class HomePage extends StatelessWidget {
             notificationCount: 3,
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(top: 16, bottom: 100),
-              children: const [
-                // Greeting section
-                AnimatedFadeSlider(
-                  index: 1,
-                  child: _GreetingSection(),
-                ),
-                SizedBox(height: 20),
+            child: Consumer<OrderProvider>(
+              builder: (context, orderProv, _) {
+                final activeOrders = orderProv.orders
+                    .where((o) => o.status.isActive)
+                    .toList();
 
-                // Quick actions
-                AnimatedFadeSlider(
-                  index: 2,
-                  child: BuildQuickActions(),
-                ),
-                SizedBox(height: 20),
+                return ListView(
+                  padding: const EdgeInsets.only(top: 16, bottom: 100),
+                  children: [
+                    // Greeting section
+                    AnimatedFadeSlider(
+                      index: 1,
+                      child: const _GreetingSection(),
+                    ),
+                    const SizedBox(height: 20),
 
-                // Promo banners
-                AnimatedFadeSlider(
-                  index: 3,
-                  child: _SectionHeader(title: 'Promo Spesial'),
-                ),
-                SizedBox(height: 10),
-                AnimatedFadeSlider(
-                  index: 4,
-                  child: BuildPromoBanners(),
-                ),
-                SizedBox(height: 20),
+                    // Quick actions
+                    AnimatedFadeSlider(
+                      index: 2,
+                      child: const BuildQuickActions(),
+                    ),
+                    const SizedBox(height: 20),
 
-                // Active orders
-                AnimatedFadeSlider(
-                  index: 5,
-                  child: _SectionHeader(title: 'Pesanan Aktif'),
-                ),
-                SizedBox(height: 10),
-                AnimatedFadeSlider(
-                  index: 6,
-                  child: BuildActiveOrdersSection(),
-                ),
-                SizedBox(height: 20),
+                    // Promo banners
+                    AnimatedFadeSlider(
+                      index: 3,
+                      child: const _SectionHeader(title: 'Promo Spesial'),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedFadeSlider(
+                      index: 4,
+                      child: const BuildPromoBanners(),
+                    ),
+                    const SizedBox(height: 20),
 
-                // Mission tracker
-                AnimatedFadeSlider(
-                  index: 7,
-                  child: _SectionHeader(title: 'Misi Berlangsung'),
-                ),
-                SizedBox(height: 10),
-                AnimatedFadeSlider(
-                  index: 8,
-                  child: BuildOngoingMissions(),
-                ),
-                SizedBox(height: 20),
+                    // Active orders — real data
+                    AnimatedFadeSlider(
+                      index: 5,
+                      child: _SectionHeader(
+                        title: activeOrders.isNotEmpty
+                            ? 'Pesanan Aktif (${activeOrders.length})'
+                            : 'Pesanan Aktif',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedFadeSlider(
+                      index: 6,
+                      child: BuildActiveOrdersSection(
+                        orders: activeOrders,
+                        isLoading: orderProv.isLoading,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                // Monthly savings
-                AnimatedFadeSlider(
-                  index: 9,
-                  child: _SectionHeader(title: 'Hemat Bulan Ini'),
-                ),
-                SizedBox(height: 10),
-                AnimatedFadeSlider(
-                  index: 10,
-                  child: BuildMonthlySavings(),
-                ),
-                SizedBox(height: 24),
-              ],
+                    // Mission tracker
+                    AnimatedFadeSlider(
+                      index: 7,
+                      child: const _SectionHeader(title: 'Misi Berlangsung'),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedFadeSlider(
+                      index: 8,
+                      child: const BuildOngoingMissions(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Monthly savings
+                    AnimatedFadeSlider(
+                      index: 9,
+                      child: const _SectionHeader(title: 'Hemat Bulan Ini'),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedFadeSlider(
+                      index: 10,
+                      child: const BuildMonthlySavings(),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
             ),
           ),
         ],

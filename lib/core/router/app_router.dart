@@ -10,6 +10,7 @@ import '../../features/customer/overlay/complete_profile_page.dart';
 import '../../features/customer/scaffold/customer_scaffold.dart';
 import '../../features/customer/pages/dashboard/index.dart';
 import '../../features/customer/pages/order/index.dart';
+import '../../features/customer/pages/order/create_order_page.dart';
 import '../../features/customer/pages/mission/index.dart';
 import '../../features/customer/pages/profil/index.dart';
 import '../../features/admin/scaffold/admin_scaffold.dart';
@@ -114,6 +115,11 @@ class AppRouter {
               path: AppRoutes.customerOrders,
               name: 'customerOrders',
               builder: (_, __) => const OrderPage(),
+            ),
+            GoRoute(
+              path: '${AppRoutes.customerOrders}/create',
+              name: 'customerOrdersCreate',
+              builder: (_, __) => const CreateOrderPage(),
             ),
             GoRoute(
               path: AppRoutes.customerMissions,
