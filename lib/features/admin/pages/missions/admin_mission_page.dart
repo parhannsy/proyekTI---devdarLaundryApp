@@ -132,7 +132,7 @@ class _AdminMissionPageState extends State<AdminMissionPage> {
                     subtitle: 'Buat misi untuk mendorong pelanggan lebih aktif',
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     itemCount: _missions.length,
                     itemBuilder: (_, i) => AnimatedFadeSlider(
                       index: i + 1,
@@ -235,6 +235,8 @@ class _MissionCard extends StatelessWidget {
                         fontSize: 14,
                         color: AppColor.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'Target: ${mission.target} • ${mission.type}',
@@ -242,6 +244,8 @@ class _MissionCard extends StatelessWidget {
                         fontSize: 12,
                         color: AppColor.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -261,15 +265,18 @@ class _MissionCard extends StatelessWidget {
                 size: 14,
                 color: AppColor.primary,
               ),
-              const SizedBox(width: 4),
-              Text(
-                'Reward: ${mission.reward}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColor.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              const SizedBox(width: 4),                    Flexible(
+                      child: Text(
+                        'Reward: ${mission.reward}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColor.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
             ],
           ),
           const SizedBox(height: 12),
@@ -301,6 +308,8 @@ class _MissionCard extends StatelessWidget {
                         fontSize: 11,
                         color: AppColor.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     ClipRRect(

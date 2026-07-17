@@ -1,9 +1,8 @@
-﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
-import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_card.dart';
 
-/// Widget kartu order yang dapat digunakan kembali di mana saja.
-/// Menggantikan function builder lama agar konsisten dengan pola StatelessWidget.
+/// Kartu order minimalis — digunakan di halaman Dashboard dan Order.
 class OrderCard extends StatelessWidget {
   final String orderId;
   final String item;
@@ -24,10 +23,9 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClayContainer(
-      radius: 16,
-      elevation: 4,
-      surfaceColor: AppColor.surface,
+    return MinimalCard(
+      radius: 12,
+      withBorder: true,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,13 +44,13 @@ class OrderCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: statusColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   status,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: statusColor,
                     fontWeight: FontWeight.w600,
                   ),
@@ -67,14 +65,14 @@ class OrderCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: AppColor.progressBackground,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColor.progressFill,
+              backgroundColor: Colors.grey.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                statusColor.withValues(alpha: 0.8),
               ),
-              minHeight: 6,
+              minHeight: 4,
             ),
           ),
         ],

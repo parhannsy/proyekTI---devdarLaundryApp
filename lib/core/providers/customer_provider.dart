@@ -17,6 +17,7 @@ class CustomerProvider extends ChangeNotifier {
   int get totalCustomers => _customers.length;
 
   Future<void> loadAllCustomers() async {
+    _errorMessage = null;
     _setLoading(true);
     try {
       _customers = await _repository.getAllCustomers();

@@ -59,7 +59,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -113,7 +113,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                     crossAxisCount: cols,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: cols == 4 ? 1.4 : 1.3,
+                    childAspectRatio: cols == 4 ? 1.1 : 1.0,
                     children: const [
                       AdminStatCard(
                         title: 'Pendapatan',
@@ -379,15 +379,19 @@ class _CategoryRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                data.name,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppColor.textPrimary,
+              Expanded(
+                child: Text(
+                  data.name,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColor.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Text(
                 '${(data.percentage * 100).toStringAsFixed(0)}%',
                 style: const TextStyle(
@@ -395,13 +399,17 @@ class _CategoryRow extends StatelessWidget {
                   color: AppColor.textSecondary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                data.revenue,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: data.color,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  data.revenue,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: data.color,
+                  ),
                 ),
               ),
             ],
@@ -457,8 +465,7 @@ class _TopCustomerRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+          Expanded(              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -467,6 +474,8 @@ class _TopCustomerRow extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '${data.orders}x order',

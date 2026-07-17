@@ -15,7 +15,6 @@ class DefaultFirebaseOptions {
     projectId: 'devadarlaundrydb',
     storageBucket: 'devadarlaundrydb.firebasestorage.app',
   );
-
   /// Opsi untuk Web Chrome / Edge.
   /// Diperlukan untuk menjalankan di browser.
   /// Dapatkan dari Firebase Console → Project Settings → Web App.

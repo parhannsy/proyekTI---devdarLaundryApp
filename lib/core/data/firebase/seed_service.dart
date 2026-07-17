@@ -93,6 +93,7 @@ class SeedService {
       'role': role,
       'loyaltyPoints': loyaltyPoints,
       'totalSavings': totalSavings,
+      'hasSeenSplash': role == 'customer', // customer seeding skip splash
       'createdAt': joinDate,
     });
 
@@ -115,6 +116,7 @@ class SeedService {
         'email': email,
         'phone': email == _customerEmail ? '081234567890' : '089876543210',
         'role': email == _customerEmail ? 'customer' : 'admin',
+        'hasSeenSplash': email == _customerEmail, // customer skip splash
         'loyaltyPoints': email == _customerEmail ? 320 : 0,
         'totalSavings': email == _customerEmail ? 125000 : 0,
         'createdAt': email == _customerEmail

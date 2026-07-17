@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 
 class WelcomeSplashPage extends StatefulWidget {
@@ -81,11 +83,17 @@ class _WelcomeSplashPageState extends State<WelcomeSplashPage>
         curve: Curves.easeInOut,
       );
     } else {
-      context.go(AppRoutes.customerDashboard);
+      _finishSplash();
     }
   }
 
-  void _skip() => context.go(AppRoutes.customerDashboard);
+  void _skip() => _finishSplash();
+
+  void _finishSplash() {
+    // Tandai bahwa user sudah lihat splash → lain kali langsung dashboard
+    context.read<AuthProvider>().markSplashSeen();
+    context.go(AppRoutes.customerDashboard);
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -145,7 +145,9 @@ class _TabletAdminScaffold extends StatelessWidget {
       appBar: _AdminAppBar(showDrawerButton: false),
       body: Row(
         children: [
-          _AdminRail(selectedIndex: selectedIndex, extended: false),
+          SingleChildScrollView(
+            child: _AdminRail(selectedIndex: selectedIndex, extended: false),
+          ),
           const VerticalDivider(width: 1),
           Expanded(child: child),
         ],
@@ -245,9 +247,7 @@ class _AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
             onSelected: (val) {
               if (val == 'logout') {
-                auth.logout().then((_) {
-                  if (context.mounted) context.go(AppRoutes.login);
-                });
+                auth.logout();
               } else if (val == 'profile') {
                 context.go(AppRoutes.adminSettings);
               }
@@ -339,30 +339,30 @@ class _AdminDrawer extends StatelessWidget {
 
   Widget _buildLogoutTile(BuildContext context, AuthProvider auth) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: InkWell(
         onTap: () {
           Navigator.pop(context);
-          auth.logout().then((_) {
-            if (context.mounted) context.go(AppRoutes.login);
-          });
+          auth.logout();
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.logout, color: Colors.redAccent, size: 20),
-              SizedBox(width: 12),
+              Icon(Icons.logout, color: Colors.redAccent, size: 18),
+              SizedBox(width: 8),
               Text(
                 'Keluar',
                 style: TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -568,29 +568,31 @@ class _AdminSidebar extends StatelessWidget {
 
             // User card + logout
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Divider(
                     color: Colors.white.withValues(alpha: 0.1),
                     height: 1,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       const CircleAvatar(
-                        radius: 18,
+                        radius: 16,
                         backgroundColor: Colors.white24,
                         child: Icon(
                           Icons.person,
                           color: Colors.white,
-                          size: 18,
+                          size: 16,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               user?.name ?? 'Admin',
@@ -616,14 +618,15 @@ class _AdminSidebar extends StatelessWidget {
                         icon: const Icon(
                           Icons.logout,
                           color: Colors.redAccent,
-                          size: 18,
+                          size: 16,
                         ),
-                        onPressed: () {
-                          auth.logout().then((_) {
-                            if (context.mounted) context.go(AppRoutes.login);
-                          });
-                        },
+                        onPressed: () => auth.logout(),
                         tooltip: 'Keluar',
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        padding: EdgeInsets.zero,
                       ),
                     ],
                   ),

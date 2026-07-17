@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 
 import '../../features/auth/login_page.dart';
 import '../../features/customer/overlay/welcome_splash.dart';
+import '../../features/customer/overlay/complete_profile_page.dart';
 import '../../features/customer/scaffold/customer_scaffold.dart';
 import '../../features/customer/pages/dashboard/index.dart';
 import '../../features/customer/pages/order/index.dart';
@@ -23,6 +24,7 @@ import '../../features/admin/pages/settings/admin_settings_page.dart';
 class AppRoutes {
   static const login = '/';
   static const welcomeSplash = '/welcome';
+  static const completeProfile = '/complete-profile';
   static const customerDashboard = '/customer/dashboard';
   static const customerOrders = '/customer/orders';
   static const customerMissions = '/customer/missions';
@@ -87,6 +89,11 @@ class AppRouter {
           path: AppRoutes.welcomeSplash,
           name: 'welcomeSplash',
           builder: (_, __) => const WelcomeSplashPage(),
+        ),
+        GoRoute(
+          path: AppRoutes.completeProfile,
+          name: 'completeProfile',
+          builder: (_, __) => const CompleteProfilePage(),
         ),
 
         // ── Customer (Shell) ───────────────────────────────────

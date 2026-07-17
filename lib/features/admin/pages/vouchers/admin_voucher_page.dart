@@ -154,7 +154,7 @@ class _AdminVoucherPageState extends State<AdminVoucherPage> {
                     subtitle: 'Buat voucher baru untuk pelanggan',
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     itemCount: _filtered.length,
                     itemBuilder: (_, i) => AnimatedFadeSlider(
                       index: i + 1,
@@ -275,30 +275,38 @@ class _VoucherCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            voucher.code,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: AppColor.textPrimary,
+                          Flexible(
+                            child: Text(
+                              voucher.code,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: AppColor.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: voucher.statusColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              voucher.status,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: voucher.statusColor,
-                                fontWeight: FontWeight.bold,
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: voucher.statusColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                voucher.status,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: voucher.statusColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -310,6 +318,8 @@ class _VoucherCard extends StatelessWidget {
                           fontSize: 12,
                           color: AppColor.textSecondary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -339,13 +349,17 @@ class _VoucherCard extends StatelessWidget {
                         color: AppColor.textSecondary,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${voucher.used}/${voucher.quota} digunakan',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColor.textPrimary,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '${voucher.used}/${voucher.quota} digunakan',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColor.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -371,11 +385,15 @@ class _VoucherCard extends StatelessWidget {
                       color: AppColor.textMuted,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      'Berlaku s/d ${voucher.validUntil}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColor.textMuted,
+                    Flexible(
+                      child: Text(
+                        'Berlaku s/d ${voucher.validUntil}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColor.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const Spacer(),

@@ -1,11 +1,9 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
-import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 
 class AdminSettingsPage extends StatelessWidget {
@@ -18,7 +16,7 @@ class AdminSettingsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,21 +44,27 @@ class AdminSettingsPage extends StatelessWidget {
                     icon: Icons.person_outline,
                     label: 'Edit Nama',
                     onTap: () =>
-                        _showEditDialog(context, 'Nama', user?.name ?? ''),
+                        _showEditDialog(context, 'name', 'Nama', user?.name ?? ''),
                   ),
                   _SettingsItem(
                     icon: Icons.email_outlined,
                     label: 'Email',
                     value: user?.email,
-                    onTap: () =>
-                        _showEditDialog(context, 'Email', user?.email ?? ''),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Email tidak dapat diubah dari sini'),
+                          backgroundColor: AppColor.info,
+                        ),
+                      );
+                    },
                   ),
                   _SettingsItem(
                     icon: Icons.phone_outlined,
                     label: 'Nomor Telepon',
                     value: user?.phone,
                     onTap: () =>
-                        _showEditDialog(context, 'Telepon', user?.phone ?? ''),
+                        _showEditDialog(context, 'phone', 'Telepon', user?.phone ?? ''),
                   ),
                   _SettingsItem(
                     icon: Icons.lock_outline,
@@ -191,17 +195,17 @@ class AdminSettingsPage extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, String field, String current) {
+  void _showEditDialog(BuildContext context, String fieldKey, String fieldLabel, String current) {
     final ctrl = TextEditingController(text: current);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Edit $field'),
+        title: Text('Edit $fieldLabel'),
         content: TextField(
           controller: ctrl,
           decoration: InputDecoration(
-            hintText: field,
+            hintText: fieldLabel,
             filled: true,
             fillColor: AppColor.background,
             border: OutlineInputBorder(
@@ -216,14 +220,35 @@ class AdminSettingsPage extends StatelessWidget {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$field diperbarui'),
-                  backgroundColor: AppColor.success,
-                ),
-              );
+              final auth = context.read<AuthProvider>();
+              try {
+                final value = ctrl.text.trim();
+                switch (fieldKey) {
+                  case 'name':
+                    await auth.updateProfile(name: value);
+                  case 'phone':
+                    await auth.updateProfile(phone: value);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$fieldLabel diperbarui'),
+                      backgroundColor: AppColor.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal: ${e.toString()}'),
+                      backgroundColor: AppColor.error,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.primary),
             child: const Text('Simpan', style: TextStyle(color: Colors.white)),
@@ -234,20 +259,28 @@ class AdminSettingsPage extends StatelessWidget {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
+    final currentPwCtrl = TextEditingController();
+    final newPwCtrl = TextEditingController();
+    final confirmPwCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Ubah Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PwField(hint: 'Password Lama'),
-            const SizedBox(height: 10),
-            _PwField(hint: 'Password Baru'),
-            const SizedBox(height: 10),
-            _PwField(hint: 'Konfirmasi Password Baru'),
-          ],
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AdminPwField(controller: currentPwCtrl, hint: 'Password Lama'),
+              const SizedBox(height: 10),
+              _AdminPwField(controller: newPwCtrl, hint: 'Password Baru'),
+              const SizedBox(height: 10),
+              _AdminPwField(controller: confirmPwCtrl, hint: 'Konfirmasi Password Baru'),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -255,14 +288,42 @@ class AdminSettingsPage extends StatelessWidget {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              if (newPwCtrl.text != confirmPwCtrl.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password baru tidak cocok'),
+                    backgroundColor: AppColor.error,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password berhasil diubah'),
-                  backgroundColor: AppColor.success,
-                ),
-              );
+              final auth = context.read<AuthProvider>();
+              try {
+                await auth.changePassword(
+                  currentPassword: currentPwCtrl.text,
+                  newPassword: newPwCtrl.text,
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password berhasil diubah!'),
+                      backgroundColor: AppColor.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal: ${e.toString().replaceFirst('Exception: ', '')}'),
+                      backgroundColor: AppColor.error,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.primary),
             child: const Text('Simpan', style: TextStyle(color: Colors.white)),
@@ -287,9 +348,7 @@ class AdminSettingsPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              auth.logout().then((_) {
-                if (context.mounted) context.go(AppRoutes.login);
-              });
+              auth.logout();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
             child: const Text('Keluar', style: TextStyle(color: Colors.white)),
@@ -342,10 +401,14 @@ class _ProfileCard extends StatelessWidget {
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   email ?? 'admin@devdara.com',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 Container(
@@ -452,11 +515,15 @@ class _SettingsItem extends StatelessWidget {
               ),
             ),
             if (value != null)
-              Text(
-                value!,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColor.textSecondary,
+              Flexible(
+                child: Text(
+                  value!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColor.textSecondary,
+                  ),
                 ),
               ),
             const SizedBox(width: 4),
@@ -466,6 +533,48 @@ class _SettingsItem extends StatelessWidget {
               color: AppColor.textMuted,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminPwField extends StatefulWidget {
+  final TextEditingController controller;
+  final String hint;
+
+  const _AdminPwField({
+    required this.controller,
+    required this.hint,
+  });
+
+  @override
+  State<_AdminPwField> createState() => _AdminPwFieldState();
+}
+
+class _AdminPwFieldState extends State<_AdminPwField> {
+  bool _obscured = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _obscured,
+      validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null,
+      decoration: InputDecoration(
+        labelText: widget.hint,
+        labelStyle: const TextStyle(fontSize: 13, color: AppColor.textSecondary),
+        filled: true,
+        fillColor: AppColor.background,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        suffixIcon: IconButton(
+          icon: Icon(_obscured ? Icons.visibility_off : Icons.visibility, size: 18),
+          onPressed: () => setState(() => _obscured = !_obscured),
+          color: AppColor.textSecondary,
         ),
       ),
     );
@@ -521,27 +630,4 @@ class _SettingsToggleState extends State<_SettingsToggle> {
   }
 }
 
-class _PwField extends StatelessWidget {
-  final String hint;
-  const _PwField({required this.hint});
 
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      obscureText: true,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: AppColor.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-      ),
-    );
-  }
-}

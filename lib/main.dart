@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -8,21 +9,35 @@ import 'firebase_options.dart';
 import 'core/providers/providers.dart';
 import 'core/data/firebase/firebase_data.dart';
 import 'core/data/firebase/seed_service.dart';
+import 'core/data/mock_data.dart';
 import 'core/router/app_router.dart';
+import 'core/repositories/repositories.dart';
+
+/// Flag global — apakah Firebase berhasil diinisialisasi?
+/// Di web selalu false karena Firebase JS SDK tidak di-load.
+bool firebaseAvailable = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ── Inisialisasi Firebase ───────────────────────────────────
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    // ── Seed data awal (hanya sekali) ───────────────────────────
-    await SeedService.seedIfNeeded();
-  } catch (e) {
-    debugPrint('[Main] Firebase init skipped: $e');
-    // Graceful fallback — UI tetap jalan walau Firebase gagal
+  // Di web: Firebase JS SDK sengaja tidak di-load (via flutterfire_ignore_scripts
+  // di index.html) karena web appId masih placeholder. Kita pake Mock data saja.
+  // Di mobile: coba init Firebase, kalau gagal → fallback Mock.
+  if (kIsWeb) {
+    debugPrint('[Main] 🌐 Web mode — skip Firebase init, pakai Mock data.');
+  } else {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await SeedService.seedIfNeeded();
+      firebaseAvailable = true;
+      debugPrint('[Main] ✅ Firebase berhasil diinisialisasi.');
+    } catch (e) {
+      debugPrint('[Main] ⚠️ Firebase gagal init — fallback ke Mock Data.');
+      debugPrint('[Main] Detail error: $e');
+    }
   }
 
   // Mengunci orientasi agar konsisten di semua device
@@ -44,38 +59,51 @@ void main() async {
   runApp(const DevdaraApp());
 }
 
+/// Memilih repository berdasarkan ketersediaan Firebase.
+AuthRepository _pickAuthRepository() =>
+    firebaseAvailable ? FirebaseAuthRepository() : MockAuthRepository();
+OrderRepository _pickOrderRepository() =>
+    firebaseAvailable ? FirebaseOrderRepository() : MockOrderRepository();
+VoucherRepository _pickVoucherRepository() =>
+    firebaseAvailable ? FirebaseVoucherRepository() : MockVoucherRepository();
+MissionRepository _pickMissionRepository() =>
+    firebaseAvailable ? FirebaseMissionRepository() : MockMissionRepository();
+CustomerRepository _pickCustomerRepository() =>
+    firebaseAvailable ? FirebaseCustomerRepository() : MockCustomerRepository();
+ReportRepository _pickReportRepository() =>
+    firebaseAvailable ? FirebaseReportRepository() : MockReportRepository();
+
 class DevdaraApp extends StatelessWidget {
   const DevdaraApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     // ── Dependency injection via MultiProvider ────────────────────────────────
-    // Urutan: repository (Firebase) → provider yang bergantung pada repository
     return MultiProvider(
       providers: [
         // Auth
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(FirebaseAuthRepository()),
+          create: (_) => AuthProvider(_pickAuthRepository()),
         ),
         // Order
         ChangeNotifierProvider(
-          create: (_) => OrderProvider(FirebaseOrderRepository()),
+          create: (_) => OrderProvider(_pickOrderRepository()),
         ),
         // Voucher
         ChangeNotifierProvider(
-          create: (_) => VoucherProvider(FirebaseVoucherRepository()),
+          create: (_) => VoucherProvider(_pickVoucherRepository()),
         ),
         // Mission
         ChangeNotifierProvider(
-          create: (_) => MissionProvider(FirebaseMissionRepository()),
+          create: (_) => MissionProvider(_pickMissionRepository()),
         ),
         // Customer
         ChangeNotifierProvider(
-          create: (_) => CustomerProvider(FirebaseCustomerRepository()),
+          create: (_) => CustomerProvider(_pickCustomerRepository()),
         ),
         // Report
         ChangeNotifierProvider(
-          create: (_) => ReportProvider(FirebaseReportRepository()),
+          create: (_) => ReportProvider(_pickReportRepository()),
         ),
       ],
       child: const _RouterRoot(),

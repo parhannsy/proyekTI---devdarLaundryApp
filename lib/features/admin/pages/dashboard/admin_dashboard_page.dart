@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
+import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_stat_card.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 
@@ -12,22 +14,24 @@ class AdminDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final userName = auth.currentUser?.name ?? 'Admin Devdara';
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 700;
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                const AnimatedFadeSlider(
+                AnimatedFadeSlider(
                   index: 1,
                   child: AdminPageHeader(
                     title: 'Dashboard',
-                    subtitle: 'Selamat datang, Admin Devdara',
+                    subtitle: 'Selamat datang, $userName',
                   ),
                 ),
 
@@ -124,7 +128,7 @@ class AdminDashboardPage extends StatelessWidget {
         crossAxisCount: isWide ? 4 : 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: isWide ? 1.4 : 1.3,
+        childAspectRatio: isWide ? 1.1 : 1.0,
       ),
       itemCount: stats.length,
       itemBuilder: (_, i) => stats[i],
@@ -217,13 +221,13 @@ class AdminDashboardPage extends StatelessWidget {
               color: o.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.local_laundry_service_outlined,
-              color: o.color,
+              color: AppColor.primaryLight,
               size: 18,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,29 +239,39 @@ class AdminDashboardPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: AppColor.textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
                   '${o.name} • ${o.type}',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColor.textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: o.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              o.status,
-              style: TextStyle(
-                fontSize: 11,
-                color: o.color,
-                fontWeight: FontWeight.bold,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: o.color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                o.status,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: o.color,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),

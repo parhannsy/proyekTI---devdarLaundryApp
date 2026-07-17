@@ -239,8 +239,7 @@ class _AdminOrderPageState extends State<AdminOrderPage>
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return ListView.builder(                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       itemCount: list.length,
       itemBuilder: (_, i) => AnimatedFadeSlider(
         index: i + 1,
@@ -343,6 +342,8 @@ class _OrderCard extends StatelessWidget {
                         fontSize: 14,
                         color: AppColor.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -351,82 +352,95 @@ class _OrderCard extends StatelessWidget {
                         fontSize: 12,
                         color: AppColor.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: order.statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  order.status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: order.statusColor,
-                    fontWeight: FontWeight.bold,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: order.statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    order.status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: order.statusColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 12,
-                color: AppColor.textMuted,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                order.date,
-                style: const TextStyle(fontSize: 11, color: AppColor.textMuted),
-              ),
-              const Spacer(),
-              Text(
-                order.total,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppColor.textPrimary,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 12,
+                  color: AppColor.textMuted,
                 ),
-              ),
-              const SizedBox(width: 12),
-              InkWell(
-                onTap: onUpdateStatus,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColor.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    size: 14,
-                    color: AppColor.primary,
-                  ),
+                const SizedBox(width: 4),
+                Text(
+                  order.date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: AppColor.textMuted),
                 ),
-              ),
-              const SizedBox(width: 6),
-              InkWell(
-                onTap: onDelete,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColor.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                const SizedBox(width: 8),
+                Text(
+                  order.total,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: AppColor.textPrimary,
                   ),
-                  child: const Icon(
-                    Icons.delete_outline,
-                    size: 14,
-                    color: AppColor.error,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onUpdateStatus,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColor.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      size: 14,
+                      color: AppColor.primary,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: onDelete,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColor.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      size: 14,
+                      color: AppColor.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

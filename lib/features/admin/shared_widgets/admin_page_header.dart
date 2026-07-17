@@ -11,10 +11,9 @@ class AdminPageHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.actions,
-  });
-
-  @override
+  });  @override
   Widget build(BuildContext context) {
+    final actionWidgets = actions;
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
       child: Row(
@@ -31,6 +30,8 @@ class AdminPageHeader extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: AppColor.textPrimary,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
@@ -40,12 +41,21 @@ class AdminPageHeader extends StatelessWidget {
                       fontSize: 13,
                       color: AppColor.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
             ),
           ),
-          if (actions != null) ...actions!,
+          if (actionWidgets != null && actionWidgets.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: actionWidgets,
+              ),
+            ),
         ],
       ),
     );

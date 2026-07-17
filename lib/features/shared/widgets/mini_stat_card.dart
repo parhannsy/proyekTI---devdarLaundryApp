@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
-import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
+import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_card.dart';
 
-/// Kartu statistik kecil yang bisa dipakai baik di halaman admin maupun customer.
-///
-/// Dua mode tampilan:
-/// - [showIconBackground]=true  → icon dibungkus lingkaran dengan warna transparan (profil customer)
-/// - [showIconBackground]=false → icon polos tanpa background (halaman admin customer)
 class MiniStatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -32,25 +27,24 @@ class MiniStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: ClayContainer(
-        radius: 16,
-        elevation: 3,
-        surfaceColor: AppColor.surface,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      child: MinimalCard(
+        radius: 12,
+        withBorder: true,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Column(
           children: [
             if (showIconBackground)
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: iconSize),
               )
             else
               Icon(icon, color: color, size: iconSize),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
@@ -59,6 +53,7 @@ class MiniStatCard extends StatelessWidget {
                 color: color,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(

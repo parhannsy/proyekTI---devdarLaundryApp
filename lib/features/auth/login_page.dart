@@ -83,7 +83,15 @@ class _LoginPageState extends State<LoginPage>
       if (auth.currentUser?.role == UserRole.admin) {
         context.go(AppRoutes.adminDashboard);
       } else {
-        context.go(AppRoutes.welcomeSplash);
+        final user = auth.currentUser;
+        // Jika profil belum lengkap → minta lengkapi dulu
+        if (user?.isProfileComplete == false) {
+          context.go(AppRoutes.completeProfile);
+        } else if (user?.hasSeenSplash == true) {
+          context.go(AppRoutes.customerDashboard);
+        } else {
+          context.go(AppRoutes.welcomeSplash);
+        }
       }
     }
   }

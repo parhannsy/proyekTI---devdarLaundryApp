@@ -48,12 +48,16 @@ class FirebaseCustomerRepository implements CustomerRepository {
     return UserModel(
       id: doc.id,
       name: data['name'] ?? '',
+      nickname: data['nickname'],
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
+      address: data['address'],
       role: UserRole.customer,
       loyaltyPoints: data['loyaltyPoints'] ?? 0,
       totalSavings: (data['totalSavings'] ?? 0).toDouble(),
       avatarUrl: data['avatarUrl'],
+      hasSeenSplash: data['hasSeenSplash'] ?? false,
+      isProfileComplete: data['isProfileComplete'] ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
   }

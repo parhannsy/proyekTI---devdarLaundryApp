@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
-import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 
 /// Shell scaffold untuk semua halaman customer.
-/// — Page transition slide sesuai arah navigasi bottom bar
-/// — Bottom bar claymorphism floating dengan gliding indicator
+///
+/// — Bottom bar clean, flat, minimalis
+/// — Page transition slide mengikuti arah navigasi
 class CustomerScaffold extends StatefulWidget {
   final Widget child;
 
@@ -26,21 +26,12 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
     AppRoutes.customerProfile,
   ];
 
-  static final _icons = [
-    Icons.home_outlined,
-    Icons.inventory_2_outlined,
-    Icons.track_changes_outlined,
-    Icons.person_outline,
+  static final _navItems = [
+    _NavItem(Icons.home_outlined, Icons.home_rounded, 'Beranda'),
+    _NavItem(Icons.inventory_2_outlined, Icons.inventory_2_rounded, 'Pesanan'),
+    _NavItem(Icons.track_changes_outlined, Icons.track_changes_rounded, 'Misi'),
+    _NavItem(Icons.person_outline, Icons.person_rounded, 'Profil'),
   ];
-
-  static final _activeIcons = [
-    Icons.home_rounded,
-    Icons.inventory_2_rounded,
-    Icons.track_changes_rounded,
-    Icons.person_rounded,
-  ];
-
-  static final _labels = ['Home', 'Order', 'Misi', 'Profil'];
 
   int _currentIndex() {
     final location = GoRouterState.of(context).matchedLocation;
@@ -59,13 +50,12 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
     final currentIndex = _currentIndex();
     final width = MediaQuery.of(context).size.width;
 
-    // Body with page transition
     Widget body = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 550),
+      duration: const Duration(milliseconds: 400),
       switchInCurve: Curves.easeInOutCubic,
       switchOutCurve: Curves.easeInOutCubic,
       transitionBuilder: (Widget child, Animation<double> animation) {
-        final beginX = _slideFromRight ? 0.35 : -0.35;
+        final beginX = _slideFromRight ? 0.3 : -0.3;
         return SlideTransition(
           position: Tween<Offset>(
             begin: Offset(beginX, 0),
@@ -83,7 +73,6 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
       ),
     );
 
-    // Responsive
     if (width >= 768) {
       body = Center(
         child: ConstrainedBox(
@@ -97,125 +86,107 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
       extendBody: true,
       backgroundColor: AppColor.background,
       body: body,
-      bottomNavigationBar: _ClayBottomBar(
+      bottomNavigationBar: _MinimalBottomBar(
         currentIndex: currentIndex,
         onTap: _onNavigate,
-        icons: _icons,
-        activeIcons: _activeIcons,
-        labels: _labels,
+        items: _navItems,
       ),
     );
   }
 }
 
-/// Bottom navigation bar claymorphism — floating dengan gliding indicator pill
-class _ClayBottomBar extends StatelessWidget {
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItem(this.icon, this.activeIcon, this.label);
+}
+
+/// Bottom navigation bar minimalis — flat, clean, tanpa claymorphism.
+class _MinimalBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final List<IconData> icons;
-  final List<IconData> activeIcons;
-  final List<String> labels;
+  final List<_NavItem> items;
 
-  const _ClayBottomBar({
+  const _MinimalBottomBar({
     required this.currentIndex,
     required this.onTap,
-    required this.icons,
-    required this.activeIcons,
-    required this.labels,
+    required this.items,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-        child: ClayContainer(
-          radius: 28,
-          elevation: 8,
-          surfaceColor: AppColor.surface,
-          padding: EdgeInsets.zero,
-          height: 72,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final barWidth = constraints.maxWidth;
-              final tabWidth = barWidth / labels.length;
-              const pillWidth = 64.0;
-              final pillLeft = (tabWidth * currentIndex + (tabWidth - pillWidth) / 2)
-                  .clamp(4.0, barWidth - pillWidth - 4);
-
-              return Stack(
-                children: [
-                  // ── Gliding indicator pill (claymorphism) ───
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeInOutCubic,
-                    left: pillLeft,
-                    top: 6,
-                    bottom: 6,
-                    width: pillWidth,
-                    child: ClayContainer(
-                      radius: 20,
-                      elevation: 4,
-                      pressed: false,
-                      surfaceColor: AppColor.primary,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColor.primary, AppColor.primaryDark],
-                      ),
-                      padding: EdgeInsets.zero,
-                      child: null,
-                    ),
-                  ),
-
-                  // ── Tab items ─────────────────────────────────
-                  Row(
-                    children: List.generate(labels.length, (index) {
-                      final isSelected = currentIndex == index;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => onTap(index),
-                          behavior: HitTestBehavior.opaque,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  isSelected
-                                      ? activeIcons[index]
-                                      : icons[index],
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppColor.iconSecondary,
-                                  size: 24,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  labels[index],
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : AppColor.iconSecondary,
-                                    fontSize: 10,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+        top: 8,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: List.generate(items.length, (index) {
+            final isSelected = currentIndex == index;
+            final item = items[index];
+
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onTap(index),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColor.primary.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          isSelected ? item.activeIcon : item.icon,
+                          color: isSelected
+                              ? AppColor.primary
+                              : AppColor.iconSecondary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          color: isSelected
+                              ? AppColor.primary
+                              : AppColor.textMuted,
+                          fontSize: 10,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );

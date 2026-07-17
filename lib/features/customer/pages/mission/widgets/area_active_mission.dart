@@ -1,6 +1,6 @@
-﻿import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
-import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
 import 'package:flutter/material.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_card.dart';
 
 class ActiveMissionCard extends StatelessWidget {
   final String title, reward, deadline;
@@ -8,7 +8,6 @@ class ActiveMissionCard extends StatelessWidget {
 
   const ActiveMissionCard({
     super.key,
-    // Menyiapkan data dummy default jika parameter tidak dikirim
     this.title = 'Misi Rahasia',
     this.reward = 'Hadiah Menarik',
     this.deadline = 'Segera Berakhir',
@@ -18,31 +17,18 @@ class ActiveMissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double progressPercent = totalProgress > 0 ? (currentProgress / totalProgress) : 0.0;
-
-    return ClayContainer(
-      radius: 20,
-      elevation: 4,
-      surfaceColor: Colors.white,
-      borderColor: Colors.blue.shade50,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      width: 280,
-      padding: const EdgeInsets.all(16),
+    final progressPercent = totalProgress > 0 ? (currentProgress / totalProgress) : 0.0;
+    return MinimalCard(
+      radius: 14, withBorder: true,
+      width: 280, padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.star_outline_rounded, color: Colors.orange, size: 24),
+              const Icon(Icons.star_outline_rounded, color: AppColor.warning, size: 22),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColor.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis)),
             ],
           ),
           const SizedBox(height: 12),
@@ -53,33 +39,25 @@ class ActiveMissionCard extends StatelessWidget {
               _infoRow(Icons.access_time_rounded, deadline),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progressPercent,
-              minHeight: 8,
-              backgroundColor: Colors.blue.shade50,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColor.primary),
-            ),
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(value: progressPercent, minHeight: 5,
+              backgroundColor: Colors.grey.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColor.primary)),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '$currentProgress/$totalProgress',
-            style: const TextStyle(color: AppColor.primary, fontWeight: FontWeight.bold),
-          ),
+          const SizedBox(height: 6),
+          Text('$currentProgress/$totalProgress', style: const TextStyle(color: AppColor.primary, fontWeight: FontWeight.bold, fontSize: 12)),
         ],
       ),
     );
   }
 
   Widget _infoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-      ],
-    );
+    return Row(children: [
+      Icon(icon, size: 14, color: AppColor.textMuted),
+      const SizedBox(width: 4),
+      Text(text, style: const TextStyle(color: AppColor.textSecondary, fontSize: 12)),
+    ]);
   }
 }
