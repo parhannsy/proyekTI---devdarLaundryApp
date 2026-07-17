@@ -9,7 +9,7 @@ class MockOrderRepository implements OrderRepository {
       customerId: 'cust-001',
       customerName: 'Ahmad Farhan',
       customerAddress: 'Jl. Merdeka No. 10, Jakarta',
-      category: OrderCategory.regular,
+      category: OrderCategory.pakaian,
       itemName: 'Baju & Celana',
       unitType: UnitType.kiloan,
       quantity: 3.5,
@@ -38,7 +38,7 @@ class MockOrderRepository implements OrderRepository {
       customerId: 'cust-002',
       customerName: 'Siti Rahayu',
       customerAddress: 'Jl. Sudirman No. 25, Jakarta',
-      category: OrderCategory.express,
+      category: OrderCategory.pakaian,
       itemName: 'Seragam Kerja',
       unitType: UnitType.kiloan,
       quantity: 2.0,
@@ -68,8 +68,8 @@ class MockOrderRepository implements OrderRepository {
       customerId: 'cust-002',
       customerName: 'Siti Rahayu',
       customerAddress: 'Jl. Sudirman No. 25, Jakarta',
-      category: OrderCategory.dryClean,
-      itemName: 'Jas & Kebaya',
+      category: OrderCategory.perlengkapanKamar,
+      itemName: 'Sprei & Sarung Bantal',
       unitType: UnitType.satuan,
       quantity: 2,
       status: OrderStatus.delivering,
@@ -83,7 +83,7 @@ class MockOrderRepository implements OrderRepository {
       customerId: 'cust-004',
       customerName: 'Dewi Kusuma',
       customerAddress: 'Jl. Thamrin No. 8, Jakarta',
-      category: OrderCategory.regular,
+      category: OrderCategory.perlengkapanKamar,
       itemName: 'Handuk & Sprei',
       unitType: UnitType.kiloan,
       quantity: 4.0,
@@ -98,7 +98,7 @@ class MockOrderRepository implements OrderRepository {
       customerId: 'cust-005',
       customerName: 'Reza Pratama',
       customerAddress: 'Jl. Kuningan No. 15, Jakarta',
-      category: OrderCategory.regular,
+      category: OrderCategory.pakaian,
       itemName: 'Kaos & Jeans',
       unitType: UnitType.kiloan,
       quantity: 2.5,
@@ -153,8 +153,16 @@ class MockOrderRepository implements OrderRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     final index = _orders.indexWhere((o) => o.id == id);
     if (index == -1) throw Exception('Order tidak ditemukan.');
-    final updated = _orders[index].copyWith(
+
+    final current = _orders[index];
+    double totalPrice = current.totalPrice;
+    if (status == OrderStatus.completed && totalPrice == 0 && current.estimatedTotal != null) {
+      totalPrice = current.estimatedTotal!;
+    }
+
+    final updated = current.copyWith(
       status: status,
+      totalPrice: totalPrice,
       completedAt: status == OrderStatus.completed ? DateTime.now() : null,
     );
     _orders[index] = updated;

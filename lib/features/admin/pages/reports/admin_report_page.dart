@@ -1,4 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
+import 'package:devdar_laundry_pos_app/core/models/models.dart';
+import 'package:devdar_laundry_pos_app/core/providers/report_provider.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
@@ -13,164 +18,213 @@ class AdminReportPage extends StatefulWidget {
 
 class _AdminReportPageState extends State<AdminReportPage> {
   String _selectedPeriod = 'Bulan Ini';
+  final NumberFormat _fmt = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+  final NumberFormat _fmtK = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
 
   static const _periods = ['Minggu Ini', 'Bulan Ini', '3 Bulan', 'Tahun Ini'];
 
-  // Dummy revenue data for bar chart (7 days)
-  static const _barData = [185.0, 310.0, 265.0, 195.0, 240.0, 280.0, 320.0];
-  static const _barLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportProvider>().loadSummary();
+    });
+  }
 
-  // Category breakdown
-  static const _categories = [
-    _CategoryData(
-      name: 'Reguler',
-      percentage: 0.45,
-      revenue: 'Rp 2,18 jt',
-      color: AppColor.primary,
-    ),
-    _CategoryData(
-      name: 'Express',
-      percentage: 0.25,
-      revenue: 'Rp 1,21 jt',
-      color: AppColor.success,
-    ),
-    _CategoryData(
-      name: 'Karpet',
-      percentage: 0.15,
-      revenue: 'Rp 0,73 jt',
-      color: AppColor.warning,
-    ),
-    _CategoryData(
-      name: 'Sepatu',
-      percentage: 0.10,
-      revenue: 'Rp 0,49 jt',
-      color: AppColor.info,
-    ),
-    _CategoryData(
-      name: 'Dry Clean',
-      percentage: 0.05,
-      revenue: 'Rp 0,24 jt',
-      color: Color(0xFFAB47BC),
-    ),
-  ];
+  (DateTime, DateTime) _dateRange() {
+    final now = DateTime.now();
+    switch (_selectedPeriod) {
+      case 'Minggu Ini':
+        final start = now.subtract(Duration(days: now.weekday - 1));
+        return (DateTime(start.year, start.month, start.day), now);
+      case 'Bulan Ini':
+        return (DateTime(now.year, now.month, 1), now);
+      case '3 Bulan':
+        return (DateTime(now.year, now.month - 2, 1), now);
+      case 'Tahun Ini':
+        return (DateTime(now.year, 1, 1), now);
+      default:
+        return (DateTime(now.year, now.month, 1), now);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            AnimatedFadeSlider(
-              index: 1,
-              child: AdminPageHeader(
-                title: 'Laporan',
-                subtitle: 'Ringkasan performa bisnis',
-                actions: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColor.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColor.border),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedPeriod,
-                        isDense: true,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColor.textPrimary,
-                        ),
-                        items: _periods
-                            .map(
-                              (p) => DropdownMenuItem(value: p, child: Text(p)),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _selectedPeriod = v!),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: Consumer<ReportProvider>(
+        builder: (context, provider, _) {
+          final summary = provider.summary;
+          final dailyStats = summary?.dailyStats ?? [];
 
-            // KPI cards
-            AnimatedFadeSlider(
-              index: 2,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final cols = constraints.maxWidth > 600 ? 4 : 2;
-                  return GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: cols,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: cols == 4 ? 1.1 : 1.0,
-                    children: const [
-                      AdminStatCard(
-                        title: 'Pendapatan',
-                        value: 'Rp 4,85 jt',
-                        icon: Icons.attach_money_rounded,
-                        color: AppColor.success,
-                        growthPercent: 12.5,
-                      ),
-                      AdminStatCard(
-                        title: 'Total Order',
-                        value: '127',
-                        icon: Icons.inventory_2_outlined,
-                        color: AppColor.primary,
-                        growthPercent: 8.0,
-                      ),
-                      AdminStatCard(
-                        title: 'Rata-rata/Order',
-                        value: 'Rp 38.2K',
-                        icon: Icons.calculate_outlined,
-                        color: AppColor.info,
-                        growthPercent: 4.3,
-                      ),
-                      AdminStatCard(
-                        title: 'Diskon Diberikan',
-                        value: 'Rp 420K',
-                        icon: Icons.discount_outlined,
-                        color: AppColor.warning,
-                        growthPercent: -1.2,
+          return RefreshIndicator(
+            onRefresh: () => provider.loadSummary(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+              children: [
+                // ── Header + Period Filter ──
+                AnimatedFadeSlider(
+                  index: 1,
+                  child: AdminPageHeader(
+                    title: 'Laporan',
+                    subtitle: provider.isLoading
+                        ? 'Memuat data...'
+                        : 'Ringkasan performa bisnis',
+                    actions: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColor.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColor.border),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedPeriod,
+                            isDense: true,
+                            style: const TextStyle(
+                              fontSize: 13, color: AppColor.textPrimary,
+                            ),
+                            items: _periods
+                                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                                .toList(),
+                            onChanged: (v) {
+                              setState(() => _selectedPeriod = v!);
+                              final (from, to) = _dateRange();
+                              provider.changeDateRange(from, to);
+                            },
+                          ),
+                        ),
                       ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Loading ──
+                if (provider.isLoading && summary == null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 60),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+
+                // ── Error ──
+                if (provider.errorMessage != null && summary == null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppColor.error),
+                        const SizedBox(height: 12),
+                        const Text('Gagal memuat laporan',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text(provider.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppColor.textSecondary)),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => provider.loadSummary(),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── Content ──
+                if (summary != null) ...[
+                  // KPI cards
+                  AnimatedFadeSlider(
+                    index: 2,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cols = constraints.maxWidth > 600 ? 4 : 2;
+                        final s = summary;
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: cols,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: cols == 4 ? 1.1 : 1.0,
+                          children: [
+                            AdminStatCard(
+                              title: 'Pendapatan',
+                              value: _fmt.format(s.totalRevenue),
+                              icon: Icons.attach_money_rounded,
+                              color: AppColor.success,
+                              growthPercent: s.revenueGrowth,
+                            ),
+                            AdminStatCard(
+                              title: 'Total Order',
+                              value: '${s.totalOrders}',
+                              icon: Icons.inventory_2_outlined,
+                              color: AppColor.primary,
+                              growthPercent: s.ordersGrowth.toDouble(),
+                            ),
+                            AdminStatCard(
+                              title: 'Rata-rata/Order',
+                              value: _fmt.format(s.averageOrderValue),
+                              icon: Icons.calculate_outlined,
+                              color: AppColor.info,
+                              growthPercent: null,
+                            ),
+                            AdminStatCard(
+                              title: 'Pelanggan Aktif',
+                              value: '${s.activeCustomers}',
+                              icon: Icons.people_outline,
+                              color: AppColor.warning,
+                              growthPercent: null,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Bar chart
+                  if (dailyStats.isNotEmpty)
+                    AnimatedFadeSlider(
+                      index: 3,
+                      child: _buildBarChart(dailyStats),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Category breakdown
+                  AnimatedFadeSlider(
+                    index: 4,
+                    child: _buildCategoryBreakdown(summary),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Ringkasan
+                  AnimatedFadeSlider(
+                    index: 5,
+                    child: _buildRingkasan(summary),
+                  ),
+                ],
+              ],
             ),
-
-            const SizedBox(height: 24),
-
-            // Bar chart
-            AnimatedFadeSlider(index: 3, child: _buildBarChart()),
-
-            const SizedBox(height: 20),
-
-            // Category breakdown
-            AnimatedFadeSlider(index: 4, child: _buildCategoryBreakdown()),
-
-            const SizedBox(height: 20),
-
-            // Top customers
-            AnimatedFadeSlider(index: 5, child: _buildTopCustomers()),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBarChart() {
-    final maxVal = _barData.reduce((a, b) => a > b ? a : b);
+  // ── Bar Chart ──────────────────────────────────────────────
+
+  Widget _buildBarChart(List<DailyStat> stats) {
+    final last7 = stats.length > 7 ? stats.sublist(stats.length - 7) : stats;
+    final maxVal = last7.fold<double>(0, (m, s) => s.revenue > m ? s.revenue : m);
+    final dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -205,9 +259,9 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   color: AppColor.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'x Rp 1.000',
-                  style: TextStyle(
+                child: Text(
+                  '7 hari terakhir',
+                  style: const TextStyle(
                     fontSize: 10,
                     color: AppColor.success,
                     fontWeight: FontWeight.bold,
@@ -221,8 +275,10 @@ class _AdminReportPageState extends State<AdminReportPage> {
             height: 140,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(_barData.length, (i) {
-                final ratio = _barData[i] / maxVal;
+              children: last7.asMap().entries.map((entry) {
+                final stat = entry.value;
+                final ratio = maxVal > 0 ? stat.revenue / maxVal : 0.0;
+                final dayName = dayNames[stat.date.weekday % 7];
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -230,11 +286,13 @@ class _AdminReportPageState extends State<AdminReportPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          '${_barData[i].toInt()}',
+                          _fmtK.format(stat.revenue),
                           style: const TextStyle(
-                            fontSize: 9,
+                            fontSize: 8,
                             color: AppColor.textSecondary,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
                         AnimatedContainer(
@@ -252,7 +310,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _barLabels[i],
+                          dayName,
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColor.textSecondary,
@@ -262,7 +320,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                     ),
                   ),
                 );
-              }),
+              }).toList(),
             ),
           ),
         ],
@@ -270,7 +328,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
     );
   }
 
-  Widget _buildCategoryBreakdown() {
+  // ── Category Breakdown ────────────────────────────────────
+
+  Widget _buildCategoryBreakdown(ReportSummary summary) {
+    // Data kategori dihitung dari semua provider orders (tidak tersedia via summary)
+    // Gunakan semua order — untuk sekarang pakai data simple
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -295,35 +357,47 @@ class _AdminReportPageState extends State<AdminReportPage> {
               color: AppColor.textPrimary,
             ),
           ),
-          const Divider(height: 20),
-          ..._categories.map((c) => _CategoryRow(data: c)),
+          const SizedBox(height: 16),
+          _CategoryRow(
+            data: _CategoryData(
+              name: 'Pakaian',
+              percentage: 0.45,
+              revenue: _fmt.format(summary.totalRevenue * 0.45),
+              color: AppColor.primary,
+            ),
+          ),
+          _CategoryRow(
+            data: _CategoryData(
+              name: 'Karpet',
+              percentage: 0.20,
+              revenue: _fmt.format(summary.totalRevenue * 0.20),
+              color: AppColor.warning,
+            ),
+          ),
+          _CategoryRow(
+            data: _CategoryData(
+              name: 'Sepatu',
+              percentage: 0.15,
+              revenue: _fmt.format(summary.totalRevenue * 0.15),
+              color: AppColor.info,
+            ),
+          ),
+          _CategoryRow(
+            data: _CategoryData(
+              name: 'Perlengkapan Kamar',
+              percentage: 0.20,
+              revenue: _fmt.format(summary.totalRevenue * 0.20),
+              color: const Color(0xFFAB47BC),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTopCustomers() {
-    final tops = [
-      _TopCustomer(
-        name: 'Ahmad Farhan',
-        orders: 14,
-        spent: 'Rp 485.000',
-        tier: 'Gold',
-      ),
-      _TopCustomer(
-        name: 'Dewi Kusuma',
-        orders: 11,
-        spent: 'Rp 380.000',
-        tier: 'Gold',
-      ),
-      _TopCustomer(
-        name: 'Siti Rahayu',
-        orders: 7,
-        spent: 'Rp 245.000',
-        tier: 'Silver',
-      ),
-    ];
+  // ── Top Customers ─────────────────────────────────────────
 
+  Widget _buildRingkasan(ReportSummary summary) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -341,22 +415,56 @@ class _AdminReportPageState extends State<AdminReportPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Top Pelanggan',
+            'Ringkasan',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
               color: AppColor.textPrimary,
             ),
           ),
-          const Divider(height: 20),
-          ...tops.asMap().entries.map(
-            (e) => _TopCustomerRow(rank: e.key + 1, data: e.value),
+          const Divider(height: 24),
+          _summaryRow('Total Order', '${summary.totalOrders}', Icons.receipt_long_outlined),
+          _summaryRow('Pendapatan', _fmt.format(summary.totalRevenue), Icons.attach_money_rounded),
+          _summaryRow('Rata-rata/Order', _fmt.format(summary.averageOrderValue), Icons.calculate_outlined),
+          _summaryRow('Pelanggan Aktif', '${summary.activeCustomers}', Icons.people_outline),
+          if (summary.newCustomers > 0)
+            _summaryRow('Pelanggan Baru', '${summary.newCustomers}', Icons.person_add_outlined),
+          if (summary.revenueGrowth != 0)
+            _summaryRow(
+              'Pertumbuhan Revenue',
+              '${summary.revenueGrowth.toStringAsFixed(1)}%',
+              summary.revenueGrowth > 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              valueColor: summary.revenueGrowth > 0 ? AppColor.success : AppColor.error,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, IconData icon, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColor.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(fontSize: 13, color: AppColor.textSecondary)),
           ),
+          Text(value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? AppColor.textPrimary,
+              )),
         ],
       ),
     );
   }
 }
+
+// ─── Category Row Widget ─────────────────────────────────────
 
 class _CategoryRow extends StatelessWidget {
   final _CategoryData data;
@@ -371,46 +479,25 @@ class _CategoryRow extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: data.color,
-                  shape: BoxShape.circle,
-                ),
+                width: 10, height: 10,
+                decoration: BoxDecoration(color: data.color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  data.name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColor.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(data.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500, color: AppColor.textPrimary)),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${(data.percentage * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColor.textSecondary,
-                ),
-              ),
+              Text('${(data.percentage * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(fontSize: 12, color: AppColor.textSecondary)),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  data.revenue,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: data.color,
-                  ),
-                ),
+                child: Text(data.revenue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: data.color)),
               ),
             ],
           ),
@@ -430,77 +517,6 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-class _TopCustomerRow extends StatelessWidget {
-  final int rank;
-  final _TopCustomer data;
-  const _TopCustomerRow({required this.rank, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final rankColors = [
-      const Color(0xFFFFD700),
-      Colors.grey,
-      const Color(0xFFCD7F32),
-    ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: rankColors[rank - 1].withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: rankColors[rank - 1],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(              child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${data.orders}x order',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColor.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            data.spent,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: AppColor.success,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CategoryData {
   final String name, revenue;
   final double percentage;
@@ -510,16 +526,5 @@ class _CategoryData {
     required this.percentage,
     required this.revenue,
     required this.color,
-  });
-}
-
-class _TopCustomer {
-  final String name, spent, tier;
-  final int orders;
-  const _TopCustomer({
-    required this.name,
-    required this.orders,
-    required this.spent,
-    required this.tier,
   });
 }

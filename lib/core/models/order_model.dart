@@ -1,9 +1,7 @@
-/// Status pesanan — alur 5 tahap utama laundry.
-///
-/// 📝 REQUEST → ✅ ACCEPTED → 🔄 PROCESSING (pickedUp+processing)
-///   → 🚛 DELIVERING → ✅ COMPLETED
-///
-/// Jalur batal: ❌ REJECTED (oleh admin) / ❌ CANCELLED (oleh customer)
+// Status pesanan — alur 5 tahap utama laundry.
+// 📝 REQUEST → ✅ ACCEPTED → 🔄 PROCESSING (pickedUp+processing)
+//   → 🚛 DELIVERING → ✅ COMPLETED
+// Jalur batal: ❌ REJECTED (oleh admin) / ❌ CANCELLED (oleh customer)
 import 'package:flutter/material.dart' show IconData, Icons;
 
 enum OrderStatus {
@@ -19,11 +17,10 @@ enum OrderStatus {
 
 /// Kategori layanan cucian.
 enum OrderCategory {
-  regular,
-  express,
+  pakaian,
   carpet,
   shoes,
-  dryClean,
+  perlengkapanKamar,
 }
 
 /// Satuan hitung barang yang akan dicuci.
@@ -110,16 +107,14 @@ extension OrderStatusLabel on OrderStatus {
 extension OrderCategoryLabel on OrderCategory {
   String get label {
     switch (this) {
-      case OrderCategory.regular:
-        return 'Reguler';
-      case OrderCategory.express:
-        return 'Express';
+      case OrderCategory.pakaian:
+        return 'Pakaian';
       case OrderCategory.carpet:
         return 'Karpet';
       case OrderCategory.shoes:
         return 'Sepatu';
-      case OrderCategory.dryClean:
-        return 'Dry Clean';
+      case OrderCategory.perlengkapanKamar:
+        return 'Perlengkapan Kamar';
     }
   }
 }
@@ -194,8 +189,14 @@ class OrderModel {
   /// Harga final setelah diskon.
   double get finalPrice => totalPrice - discount;
 
-  /// Label untuk ditampilkan di UI: "3.5 kg" atau "2 pcs"
-  String get quantityLabel => '${quantity.toString()} ${unitType.shortLabel}';
+  /// Label untuk ditampilkan di UI: "3.5 kg", "2 pcs", atau "3×2 m²" (karpet)
+  String get quantityLabel {
+    if (category == OrderCategory.carpet) {
+      // quantity = panjang × lebar (luas dalam m²)
+      return '${quantity.toStringAsFixed(1)} m²';
+    }
+    return '${quantity.toString()} ${unitType.shortLabel}';
+  }
 
   OrderModel copyWith({
     String? id,

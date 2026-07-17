@@ -18,9 +18,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   final _formKey = GlobalKey<FormState>();
   final _itemNameCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController();
+  final _panjangCtrl = TextEditingController();
+  final _lebarCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
-  OrderCategory _selectedCategory = OrderCategory.regular;
+  OrderCategory _selectedCategory = OrderCategory.pakaian;
   UnitType _selectedUnitType = UnitType.kiloan;
   bool _pickupToday = true;
   DateTime _pickupDate = DateTime.now();
@@ -30,15 +32,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
   // Ikon & warna per kategori
   static final Map<OrderCategory, _CategoryMeta> _catMeta = {
-    OrderCategory.regular: _CategoryMeta(
-      Icons.local_laundry_service_outlined,
+    OrderCategory.pakaian: _CategoryMeta(
+      Icons.checkroom_outlined,
       const Color(0xFF2196F3),
       const Color(0xFFE3F2FD),
-    ),
-    OrderCategory.express: _CategoryMeta(
-      Icons.flash_on_outlined,
-      const Color(0xFFFF9800),
-      const Color(0xFFFFF3E0),
     ),
     OrderCategory.carpet: _CategoryMeta(
       Icons.grid_view_rounded,
@@ -50,8 +47,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       const Color(0xFF4CAF50),
       const Color(0xFFE8F5E9),
     ),
-    OrderCategory.dryClean: _CategoryMeta(
-      Icons.checkroom_outlined,
+    OrderCategory.perlengkapanKamar: _CategoryMeta(
+      Icons.bed_outlined,
       const Color(0xFF607D8B),
       const Color(0xFFECEFF1),
     ),
@@ -61,6 +58,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   void dispose() {
     _itemNameCtrl.dispose();
     _quantityCtrl.dispose();
+    _panjangCtrl.dispose();
+    _lebarCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
   }
@@ -91,17 +90,43 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final user = auth.currentUser;
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
-      final quantity = double.tryParse(_quantityCtrl.text) ?? 0;
-      if (quantity <= 0) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Jumlah harus lebih dari 0'),
-              backgroundColor: AppColor.error,
-            ),
-          );
+      double quantity;
+      String? notes = _notesCtrl.text.trim().isEmpty
+          ? null
+          : _notesCtrl.text.trim();
+
+      if (_selectedCategory == OrderCategory.carpet) {
+        final panjang = double.tryParse(_panjangCtrl.text) ?? 0;
+        final lebar = double.tryParse(_lebarCtrl.text) ?? 0;
+        if (panjang <= 0 || lebar <= 0) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Panjang dan lebar harus lebih dari 0'),
+                backgroundColor: AppColor.error,
+              ),
+            );
+          }
+          return;
         }
-        return;
+        quantity = panjang * lebar;
+        String fmt(double d) =>
+            d == d.roundToDouble() ? d.toInt().toString() : d.toStringAsFixed(1);
+        final ukuranStr = 'Ukuran: ${fmt(panjang)}m × ${fmt(lebar)}m';
+        notes = notes != null ? '$ukuranStr. $notes' : ukuranStr;
+      } else {
+        quantity = double.tryParse(_quantityCtrl.text) ?? 0;
+        if (quantity <= 0) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Jumlah harus lebih dari 0'),
+                backgroundColor: AppColor.error,
+              ),
+            );
+          }
+          return;
+        }
       }
 
       final order = OrderModel(
@@ -115,7 +140,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         quantity: quantity,
         status: OrderStatus.request,
         pickupDate: _pickupToday ? DateTime.now() : _pickupDate,
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        notes: notes,
         createdAt: DateTime.now(),
       );
 
@@ -246,7 +271,14 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                     final meta = _catMeta[cat]!;
                     final isSelected = _selectedCategory == cat;
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedCategory = cat),
+                      onTap: () => setState(() {
+                        _selectedCategory = cat;
+                        if (cat == OrderCategory.carpet) {
+                          _selectedUnitType = UnitType.meteran;
+                        } else if (_selectedUnitType == UnitType.meteran) {
+                          _selectedUnitType = UnitType.kiloan;
+                        }
+                      }),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
@@ -330,8 +362,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                     );
                   }).toList(),
                   selected: {_selectedUnitType},
-                  onSelectionChanged: (v) =>
-                      setState(() => _selectedUnitType = v.first),
+                  onSelectionChanged: _selectedCategory == OrderCategory.carpet
+                      ? null
+                      : (v) => setState(() => _selectedUnitType = v.first),
                   style: SegmentedButton.styleFrom(
                     selectedBackgroundColor:
                         AppColor.primary.withValues(alpha: 0.1),
@@ -341,38 +374,128 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // ── Jumlah ────────────────────────────────
-                TextFormField(
-                  controller: _quantityCtrl,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Jumlah (${_selectedUnitType.shortLabel})',
-                    hintText: 'Masukkan jumlah',
-                    prefixIcon: const Icon(Icons.scale_outlined,
-                        size: 20, color: AppColor.iconSecondary),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                if (_selectedCategory == OrderCategory.carpet)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 12, color: AppColor.textMuted),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Karpet dihitung berdasarkan luas (m²)',
+                          style: TextStyle(
+                              fontSize: 11, color: AppColor.textMuted),
+                        ),
+                      ],
                     ),
                   ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Jumlah wajib diisi';
-                    }
-                    final num = double.tryParse(v);
-                    if (num == null || num <= 0) {
-                      return 'Jumlah harus lebih dari 0';
-                    }
-                    if (_selectedUnitType == UnitType.satuan && num != num.roundToDouble()) {
-                      return 'Jumlah satuan harus bilangan bulat';
-                    }
-                    return null;
-                  },
-                ),
+                const SizedBox(height: 16),
+
+                // ── Jumlah / Ukuran ─────────────────────────
+                if (_selectedCategory == OrderCategory.carpet) ...[
+                  // Untuk karpet: Panjang × Lebar
+                  const Text(
+                    'Ukuran Karpet',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColor.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _panjangCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Panjang (m)',
+                            hintText: 'Contoh: 3',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Panjang wajib diisi';
+                            }
+                            final n = double.tryParse(v);
+                            if (n == null || n <= 0) return '> 0';
+                            return null;
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(Icons.close,
+                            size: 16, color: AppColor.textMuted),
+                      ),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _lebarCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Lebar (m)',
+                            hintText: 'Contoh: 2',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Lebar wajib diisi';
+                            }
+                            final n = double.tryParse(v);
+                            if (n == null || n <= 0) return '> 0';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  TextFormField(
+                    controller: _quantityCtrl,
+                    keyboardType:
+                        TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Jumlah (${_selectedUnitType.shortLabel})',
+                      hintText: 'Masukkan jumlah',
+                      prefixIcon: const Icon(Icons.scale_outlined,
+                          size: 20, color: AppColor.iconSecondary),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Jumlah wajib diisi';
+                      }
+                      final num = double.tryParse(v);
+                      if (num == null || num <= 0) {
+                        return 'Jumlah harus lebih dari 0';
+                      }
+                      if (_selectedUnitType == UnitType.satuan &&
+                          num != num.roundToDouble()) {
+                        return 'Jumlah satuan harus bilangan bulat';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 // ── Tanggal Pick Up ───────────────────────

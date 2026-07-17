@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
@@ -88,11 +89,7 @@ class AdminSettingsPage extends StatelessWidget {
                     label: 'Info Toko',
                     onTap: () {},
                   ),
-                  _SettingsItem(
-                    icon: Icons.attach_money,
-                    label: 'Harga Layanan',
-                    onTap: () {},
-                  ),
+
                   _SettingsItem(
                     icon: Icons.local_shipping_outlined,
                     label: 'Area Pengiriman',
@@ -120,16 +117,7 @@ class AdminSettingsPage extends StatelessWidget {
                     label: 'Notifikasi Order Baru',
                     value: true,
                   ),
-                  _SettingsToggle(
-                    icon: Icons.payment_outlined,
-                    label: 'Notifikasi Pembayaran',
-                    value: true,
-                  ),
-                  _SettingsToggle(
-                    icon: Icons.person_add_outlined,
-                    label: 'Notifikasi Pelanggan Baru',
-                    value: false,
-                  ),
+
                 ],
               ),
             ),
@@ -148,16 +136,7 @@ class AdminSettingsPage extends StatelessWidget {
                     value: 'v0.1.0',
                     onTap: () {},
                   ),
-                  _SettingsItem(
-                    icon: Icons.description_outlined,
-                    label: 'Syarat & Ketentuan',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.privacy_tip_outlined,
-                    label: 'Kebijakan Privasi',
-                    onTap: () {},
-                  ),
+
                 ],
               ),
             ),
@@ -347,8 +326,11 @@ class AdminSettingsPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              auth.logout();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!context.mounted) return;
+                context.go('/');
+                auth.logout();
+              });
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
             child: const Text('Keluar', style: TextStyle(color: Colors.white)),
@@ -514,10 +496,11 @@ class _SettingsItem extends StatelessWidget {
                 ),
               ),
             ),
-            if (value != null)
-              Flexible(
+            if (value != null) ...[
+              Expanded(
                 child: Text(
                   value!,
+                  textAlign: TextAlign.end,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -526,7 +509,8 @@ class _SettingsItem extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(width: 4),
+              const SizedBox(width: 4),
+            ],
             const Icon(
               Icons.chevron_right,
               size: 16,

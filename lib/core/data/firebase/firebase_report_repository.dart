@@ -22,10 +22,12 @@ class FirebaseReportRepository implements ReportRepository {
         .get();
 
     final orders = ordersInRange.docs;
+    // Hanya hitung revenue dari order yang completed (punya totalPrice > 0)
     final totalRevenue = orders.fold<double>(
       0.0,
       (total, doc) {
         final data = doc.data() as Map<String, dynamic>;
+        if (data['status'] != 'completed') return total;
         final price = (data['totalPrice'] ?? 0).toDouble();
         final discount = (data['discount'] ?? 0).toDouble();
         return total + price - discount;

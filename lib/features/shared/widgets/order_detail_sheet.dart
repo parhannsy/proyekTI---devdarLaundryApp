@@ -388,84 +388,101 @@ class _TimelineStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Warna: completed = dark grey, current = primary, future = light grey
     final Color circleColor;
     final Color iconColor;
     final Color textColor;
     final Color lineColor;
 
     if (isCompleted) {
-      circleColor = const Color(0xFF616161); // dark grey
+      circleColor = const Color(0xFF616161);
       iconColor = Colors.white;
       textColor = const Color(0xFF616161);
       lineColor = const Color(0xFF616161);
     } else if (isCurrent) {
-      circleColor = AppColor.primary; // biru terang
+      circleColor = AppColor.primary;
       iconColor = Colors.white;
       textColor = AppColor.primary;
       lineColor = AppColor.primary;
     } else {
-      // future
-      circleColor = const Color(0xFFE0E0E0); // light grey
+      circleColor = const Color(0xFFE0E0E0);
       iconColor = const Color(0xFF9E9E9E);
       textColor = const Color(0xFF9E9E9E);
       lineColor = const Color(0xFFE0E0E0);
     }
 
-    return IntrinsicWidth(
+    const double circleSize = 36;
+    const double lineWidth = 48;
+
+    // Lebar total: circle + line (kecuali step terakhir)
+    final double stepWidth = circleSize + (isLast ? 0 : lineWidth);
+
+    return SizedBox(
+      width: stepWidth,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Circle + connecting line
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Lingkaran
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: circleColor,
-                  shape: BoxShape.circle,
-                  boxShadow: isCurrent
-                      ? [
-                          BoxShadow(
-                            color: AppColor.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  stage.icon,
-                  size: 18,
-                  color: iconColor,
-                ),
-              ),
-              // Garis penghubung (kecuali terakhir)
-              if (!isLast)
+          // Stack: lingkaran + garis penghubung di belakang
+          SizedBox(
+            width: stepWidth,
+            height: circleSize,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // Garis — dari tengah lingkaran, menembus sampai tengah lingkaran berikutnya
+                if (!isLast)
+                  Positioned(
+                    left: circleSize / 2,
+                    right: -(circleSize / 2),
+                    child: Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: lineColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                // Lingkaran
                 Container(
-                  width: 40,
-                  height: 3,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: circleSize,
+                  height: circleSize,
                   decoration: BoxDecoration(
-                    color: lineColor,
-                    borderRadius: BorderRadius.circular(2),
+                    color: circleColor,
+                    shape: BoxShape.circle,
+                    boxShadow: isCurrent
+                        ? [
+                            BoxShadow(
+                              color: AppColor.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    stage.icon,
+                    size: 18,
+                    color: iconColor,
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
-          // Label — rata tengah
-          Text(
-            stage.label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-              color: textColor,
+          // Label — bungkus SizedBox biar wrapping bisa center sempurna
+          SizedBox(
+            width: stepWidth,
+            child: Text(
+              stage.label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                color: textColor,
+              ),
             ),
           ),
         ],

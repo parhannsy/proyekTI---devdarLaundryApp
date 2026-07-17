@@ -63,8 +63,18 @@ class FirebaseOrderRepository implements OrderRepository {
     final updates = <String, dynamic>{
       'status': status.name,
     };
+
     if (status == OrderStatus.completed) {
       updates['completedAt'] = DateTime.now();
+      // Set totalPrice dari estimatedTotal saat order selesai
+      final current = await _orders.doc(id).get();
+      if (current.exists) {
+        final data = current.data() as Map<String, dynamic>;
+        final currentTotal = (data['totalPrice'] ?? 0).toDouble();
+        if (currentTotal == 0 && data['estimatedTotal'] != null) {
+          updates['totalPrice'] = (data['estimatedTotal'] as num).toDouble();
+        }
+      }
     }
 
     await _orders.doc(id).update(updates);
@@ -159,7 +169,7 @@ class FirebaseOrderRepository implements OrderRepository {
   OrderCategory _parseCategory(String? value) {
     return OrderCategory.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => OrderCategory.regular,
+      orElse: () => OrderCategory.pakaian,
     );
   }
 

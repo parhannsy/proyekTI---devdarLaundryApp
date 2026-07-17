@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
+import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
 
 // Breakpoints
 const double _kMobileBreak = 600;
@@ -247,7 +248,7 @@ class _AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
             onSelected: (val) {
               if (val == 'logout') {
-                auth.logout();
+                _confirmLogout(context, auth);
               } else if (val == 'profile') {
                 context.go(AppRoutes.adminSettings);
               }
@@ -341,10 +342,7 @@ class _AdminDrawer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: InkWell(
-        onTap: () {
-          Navigator.pop(context);
-          auth.logout();
-        },
+        onTap: () => _confirmLogout(context, auth),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -371,6 +369,35 @@ class _AdminDrawer extends StatelessWidget {
       ),
     );
   }
+}
+
+void _confirmLogout(BuildContext context, AuthProvider auth) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Keluar?'),
+      content: const Text('Anda akan keluar dari sesi admin.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              context.read<OrderProvider>().stopListening();
+              context.go('/');
+              auth.logout();
+            });
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
+          child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
 }
 
 class _DrawerNavItem extends StatelessWidget {
@@ -620,7 +647,7 @@ class _AdminSidebar extends StatelessWidget {
                           color: Colors.redAccent,
                           size: 16,
                         ),
-                        onPressed: () => auth.logout(),
+                        onPressed: () => _confirmLogout(context, auth),
                         tooltip: 'Keluar',
                         constraints: const BoxConstraints(
                           minWidth: 36,

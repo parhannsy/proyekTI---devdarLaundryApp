@@ -21,18 +21,48 @@ class OrderPage extends StatefulWidget {
 class _OrderPageState extends State<OrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<OrderModel> _orders = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadOrders();
+    _tabController.addListener(_onTabChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<OrderProvider>();
+      provider.addListener(_onOrdersChanged);
+      _syncOrders(provider);
+      _loadOrders();
+    });
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    try {
+      context.read<OrderProvider>().removeListener(_onOrdersChanged);
+    } catch (_) {}
     super.dispose();
+  }
+
+  void _onOrdersChanged() {
+    if (!mounted) return;
+    final provider = context.read<OrderProvider>();
+    _syncOrders(provider);
+  }
+
+  void _syncOrders(OrderProvider provider) {
+    setState(() {
+      _orders = provider.orders;
+      _isLoading = provider.isLoading;
+    });
+  }
+
+  void _onTabChanged() {
+    setState(() {});
   }
 
   void _loadOrders() {
@@ -66,105 +96,89 @@ class _OrderPageState extends State<OrderPage>
 
   @override
   Widget build(BuildContext context) {
+    final activeOrders = _orders.where((o) => o.status.isActive).toList();
+    final completedOrders = _orders.where((o) => !o.status.isActive).toList();
+
     return Scaffold(
       backgroundColor: AppColor.background,
-      body: Consumer<OrderProvider>(
-        builder: (context, provider, _) {
-          final activeOrders = provider.orders.where((o) => o.status.isActive).toList();
-          final completedOrders = provider.orders
-              .where((o) => !o.status.isActive)
-              .toList();
+      body: Column(
+        children: [
+          const MinimalBar(title: 'Pesanan Saya'),
 
-          return Column(
-            children: [
-              const MinimalBar(title: 'Pesanan Saya'),
+          // ── Tab bar ──────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: AppColor.primary,
+                unselectedLabelColor: AppColor.textSecondary,
+                labelStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                unselectedLabelStyle: const TextStyle(fontSize: 13),
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(text: 'Aktif (${activeOrders.length})'),
+                  Tab(text: 'Selesai (${completedOrders.length})'),
+                  Tab(text: 'Semua (${_orders.length})'),
+                ],
+              ),
+            ),
+          ),
 
-              // ── Tab bar ──────────────────────────
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: TabBar(
+          // ── Content ───────────────────────────
+          Expanded(
+            child: _isLoading && _orders.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
                     controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: AppColor.primary,
-                    unselectedLabelColor: AppColor.textSecondary,
-                    labelStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(fontSize: 13),
-                    dividerColor: Colors.transparent,
-                    tabs: [
-                      Tab(
-                        text: 'Aktif (${activeOrders.length})',
+                    children: [
+                      _OrderListView(
+                        key: const ValueKey('cust_tab_active'),
+                        orders: activeOrders,
+                        emptyMsg: 'Tidak ada pesanan aktif',
+                        statusColorFn: _statusColor,
+                        showActions: true,
+                        onCancel: (order) => _confirmCancel(context, order),
+                        onAgree: (order) => _agreeToOrder(context, order),
                       ),
-                      Tab(
-                        text: 'Selesai (${completedOrders.length})',
+                      _OrderListView(
+                        key: const ValueKey('cust_tab_completed'),
+                        orders: completedOrders,
+                        emptyMsg: 'Belum ada pesanan selesai',
+                        statusColorFn: _statusColor,
                       ),
-                      Tab(
-                        text: 'Semua (${provider.orders.length})',
+                      _OrderListView(
+                        key: const ValueKey('cust_tab_all'),
+                        orders: _orders,
+                        emptyMsg: 'Belum ada pesanan',
+                        statusColorFn: _statusColor,
+                        showActions: true,
+                        onCancel: (order) => _confirmCancel(context, order),
+                        onAgree: (order) => _agreeToOrder(context, order),
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              // ── Content ───────────────────────────
-              Expanded(
-                child: provider.isLoading && provider.orders.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _OrderListView(
-                            key: const ValueKey('cust_tab_active'),
-                            orders: activeOrders,
-                            emptyMsg: 'Tidak ada pesanan aktif',
-                            statusColorFn: _statusColor,
-                            showActions: true,
-                            onCancel: (order) =>
-                                _confirmCancel(context, order, provider),
-                            onAgree: (order) =>
-                                _agreeToOrder(context, order, provider),
-                          ),
-                          _OrderListView(
-                            key: const ValueKey('cust_tab_completed'),
-                            orders: completedOrders,
-                            emptyMsg: 'Belum ada pesanan selesai',
-                            statusColorFn: _statusColor,
-                          ),
-                          _OrderListView(
-                            key: const ValueKey('cust_tab_all'),
-                            orders: provider.orders,
-                            emptyMsg: 'Belum ada pesanan',
-                            statusColorFn: _statusColor,
-                            showActions: true,
-                            onCancel: (order) =>
-                                _confirmCancel(context, order, provider),
-                            onAgree: (order) =>
-                                _agreeToOrder(context, order, provider),
-                          ),
-                        ],
-                      ),
-              ),
-            ],
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -190,7 +204,6 @@ class _OrderPageState extends State<OrderPage>
   void _confirmCancel(
     BuildContext context,
     OrderModel order,
-    OrderProvider provider,
   ) {
     showDialog(
       context: context,
@@ -205,14 +218,15 @@ class _OrderPageState extends State<OrderPage>
           ),
           ElevatedButton(
             onPressed: () async {
+              final orderProv = context.read<OrderProvider>();
               Navigator.pop(ctx);
-              final success = await provider.cancelOrder(order.id);
+              final success = await orderProv.cancelOrder(order.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(success
                         ? '✅ Pesanan dibatalkan'
-                        : '❌ Gagal: ${provider.errorMessage ?? ""}'),
+                        : '❌ Gagal: ${orderProv.errorMessage ?? ""}'),
                     backgroundColor:
                         success ? AppColor.success : AppColor.error,
                   ),
@@ -231,7 +245,6 @@ class _OrderPageState extends State<OrderPage>
   void _agreeToOrder(
     BuildContext context,
     OrderModel order,
-    OrderProvider provider,
   ) {
     showDialog(
       context: context,
@@ -249,14 +262,15 @@ class _OrderPageState extends State<OrderPage>
           ),
           ElevatedButton(
             onPressed: () async {
+              final orderProv = context.read<OrderProvider>();
               Navigator.pop(ctx);
-              final success = await provider.agreeToOrder(order.id);
+              final success = await orderProv.agreeToOrder(order.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(success
                         ? '✅ Pesanan dilanjutkan ke penjemputan!'
-                        : '❌ Gagal: ${provider.errorMessage ?? ""}'),
+                        : '❌ Gagal: ${orderProv.errorMessage ?? ""}'),
                     backgroundColor:
                         success ? AppColor.success : AppColor.error,
                   ),

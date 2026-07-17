@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
@@ -64,12 +65,40 @@ class ProfilePage extends StatelessWidget {
                     icon: Icons.logout,
                     label: 'Keluar',
                     color: AppColor.error,
-                    onTap: () => auth.logout(),
+                    onTap: () => _confirmLogout(context, auth),
                   ),
                 ),
                 const SizedBox(height: 24),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Keluar?'),
+        content: const Text('Anda akan keluar dari akun ini.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!context.mounted) return;
+                context.go('/');
+                auth.logout();
+              });
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
+            child: const Text('Keluar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -163,20 +192,11 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _PasswordField(
-                controller: currentPwCtrl,
-                hint: 'Password Lama',
-              ),
+              _PasswordField(controller: currentPwCtrl, hint: 'Password Lama'),
               const SizedBox(height: 10),
-              _PasswordField(
-                controller: newPwCtrl,
-                hint: 'Password Baru',
-              ),
+              _PasswordField(controller: newPwCtrl, hint: 'Password Baru'),
               const SizedBox(height: 10),
-              _PasswordField(
-                controller: confirmPwCtrl,
-                hint: 'Konfirmasi Password Baru',
-              ),
+              _PasswordField(controller: confirmPwCtrl, hint: 'Konfirmasi Password Baru'),
             ],
           ),
         ),
