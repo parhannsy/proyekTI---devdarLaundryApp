@@ -67,9 +67,10 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Admin menerima permohonan & memberikan estimasi biaya.
-  Future<void> acceptRequest(String orderId, {required double estimatedTotal}) async {
+  /// [discount] adalah nilai potongan dari voucher (jika ada).
+  Future<void> acceptRequest(String orderId, {required double estimatedTotal, double discount = 0}) async {
     try {
-      final updated = await _repository.acceptOrder(orderId, estimatedTotal: estimatedTotal);
+      final updated = await _repository.acceptOrder(orderId, estimatedTotal: estimatedTotal, discount: discount);
       _replaceInList(updated);
     } catch (e) {
       _errorMessage = e.toString();

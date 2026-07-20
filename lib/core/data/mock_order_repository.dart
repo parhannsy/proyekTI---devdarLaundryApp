@@ -67,7 +67,7 @@ class MockOrderRepository implements OrderRepository {
 
   @override
   Future<OrderModel> acceptOrder(String id,
-      {required double estimatedTotal}) async {
+      {required double estimatedTotal, double discount = 0}) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final index = _orders.indexWhere((o) => o.id == id);
     if (index == -1) throw Exception('Order tidak ditemukan.');
@@ -77,6 +77,7 @@ class MockOrderRepository implements OrderRepository {
     final updated = _orders[index].copyWith(
       status: OrderStatus.accepted,
       estimatedTotal: estimatedTotal,
+      discount: discount,
     );
     _orders[index] = updated;
     return updated;

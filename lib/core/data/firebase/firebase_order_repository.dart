@@ -84,10 +84,11 @@ class FirebaseOrderRepository implements OrderRepository {
 
   @override
   Future<OrderModel> acceptOrder(String id,
-      {required double estimatedTotal}) async {
+      {required double estimatedTotal, double discount = 0}) async {
     await _orders.doc(id).update({
       'status': OrderStatus.accepted.name,
       'estimatedTotal': estimatedTotal,
+      'discount': discount,
     });
     final doc = await _orders.doc(id).get();
     return _orderFromDoc(doc);

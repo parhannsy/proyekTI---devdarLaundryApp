@@ -80,6 +80,7 @@ class OrderDetailSheet {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -288,6 +289,16 @@ class _OrderDetailSheetContent extends StatelessWidget {
                 Icons.receipt_long_outlined,
                 'Estimasi Biaya',
                 currencyFormat.format(order.estimatedTotal!)),
+          // ── Diskon (jika ada) ──
+          if (order.discount > 0) ...[
+            _detailRow(Icons.local_offer_rounded, 'Potongan Diskon',
+                '-${currencyFormat.format(order.discount)}'),
+            if (order.voucherCode != null)
+              _detailRow(Icons.confirmation_number_outlined,
+                  'Kode Voucher', order.voucherCode!),
+          ],
+
+          // ── Harga Final ──
           if (order.totalPrice > 0)
             _detailRow(
                 Icons.payments_outlined,

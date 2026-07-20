@@ -20,7 +20,8 @@ abstract class OrderRepository {
   Future<OrderModel> updateOrderStatus(String id, OrderStatus status);
 
   /// Admin menerima permohonan order + memberikan estimasi biaya.
-  Future<OrderModel> acceptOrder(String id, {required double estimatedTotal});
+  /// [discount] adalah nilai potongan dari voucher (jika ada).
+  Future<OrderModel> acceptOrder(String id, {required double estimatedTotal, double discount = 0});
 
   /// Admin menolak permohonan order dengan alasan.
   Future<OrderModel> rejectOrder(String id, {required String reason});

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
@@ -246,14 +247,58 @@ class _OrderPageState extends State<OrderPage>
     BuildContext context,
     OrderModel order,
   ) {
+    final fmt = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+    final basePrice = order.estimatedTotal ?? 0;
+    final finalPrice = basePrice - order.discount;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Setuju dengan Biaya?'),
-        content: Text(
-          'Estimasi biaya: Rp ${order.estimatedTotal?.toStringAsFixed(0) ?? '?'}\n\n'
-          'Dengan menyetujui, pesanan akan lanjut ke tahap penjemputan.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${order.itemName.isNotEmpty ? order.itemName : 'Pesanan'} — ${order.category.label}',
+              style: const TextStyle(fontSize: 13, color: AppColor.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            // Price breakdown
+            _priceRow('Estimasi Biaya', basePrice, fmt),
+            if (order.discount > 0) ...[
+              _priceRow('Diskon Voucher', -order.discount, fmt,
+                  color: AppColor.error),
+              const Divider(height: 16),
+              _priceRow('Total yang Dibayar', finalPrice, fmt,
+                  bold: true, color: AppColor.success),
+            ],
+            if (order.voucherCode != null && order.discount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_offer_rounded,
+                        size: 12, color: AppColor.primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Voucher: ${order.voucherCode}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColor.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            const Text(
+              'Dengan menyetujui, pesanan akan lanjut ke tahap penjemputan.',
+              style: TextStyle(fontSize: 12, color: AppColor.textSecondary),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -410,12 +455,18 @@ class _OrderListView extends StatelessWidget {
                   const Icon(Icons.receipt_long_outlined,
                       size: 14, color: AppColor.success),
                   const SizedBox(width: 6),
-                  Text(
-                    'Estimasi: Rp ${order.estimatedTotal!.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColor.success,
+                  Flexible(
+                    child: Text(
+                      order.discount > 0
+                          ? 'Estimasi: Rp ${order.estimatedTotal!.toStringAsFixed(0)} (Diskon: -Rp ${order.discount.toStringAsFixed(0)})'
+                          : 'Estimasi: Rp ${order.estimatedTotal!.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.success,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -523,4 +574,37 @@ class OrderStatusColor {
   final Color color;
   final Color bgColor;
   const OrderStatusColor(this.color, this.bgColor);
+}
+
+// ─── Price breakdown helper ────────────────────────────────────
+
+Widget _priceRow(String label, double amount, NumberFormat fmt, {
+  bool bold = false,
+  Color? color,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: bold ? 14 : 13,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+              color: color ?? AppColor.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          '${amount >= 0 ? '' : '-'}${fmt.format(amount.abs())}',
+          style: TextStyle(
+            fontSize: bold ? 14 : 13,
+            fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+            color: color ?? AppColor.textPrimary,
+          ),
+        ),
+      ],
+    ),
+  );
 }
