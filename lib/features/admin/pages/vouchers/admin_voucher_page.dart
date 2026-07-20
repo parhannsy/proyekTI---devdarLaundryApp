@@ -164,17 +164,20 @@ class _AdminVoucherPageState extends State<AdminVoucherPage> {
                             title: 'Belum ada voucher',
                             subtitle: 'Buat voucher baru untuk pelanggan',
                           )
-                        : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                            itemCount: filtered.length,
-                            itemBuilder: (_, i) => AnimatedFadeSlider(
-                              index: i + 4,
-                              child: _VoucherCard(
-                                voucher: filtered[i],
-                                onEdit: () => _showVoucherDialog(context, vp,
-                                    voucher: filtered[i]),
-                                onDelete: () =>
-                                    _confirmDelete(context, vp, filtered[i]),
+                        : RefreshIndicator(
+                            onRefresh: () => vp.loadAllVouchers(),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                              itemCount: filtered.length,
+                              itemBuilder: (_, i) => AnimatedFadeSlider(
+                                index: i + 4,
+                                child: _VoucherCard(
+                                  voucher: filtered[i],
+                                  onEdit: () => _showVoucherDialog(context, vp,
+                                      voucher: filtered[i]),
+                                  onDelete: () => _confirmDelete(
+                                      context, vp, filtered[i]),
+                                ),
                               ),
                             ),
                           ),
@@ -304,8 +307,9 @@ class _VoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usagePercent = voucher.totalQuota > 0
-        ? voucher.usedQuota / voucher.totalQuota
+    final hasClaimLimit = voucher.claimLimit != null && voucher.claimLimit! > 0;
+    final claimProgress = hasClaimLimit
+        ? voucher.claimCount / voucher.claimLimit!
         : 0.0;
     final statusStr = voucher.isExpired || voucher.status == VoucherStatus.expired
         ? 'Kedaluwarsa'
@@ -473,11 +477,11 @@ class _VoucherCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // Quota progress
+                // Sisa klaim (untuk admin — bukan kuota pemakaian)
                 Row(
                   children: [
                     const Text(
-                      'Kuota:',
+                      'Sisa:',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColor.textSecondary,
@@ -486,10 +490,14 @@ class _VoucherCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        '${voucher.usedQuota}/${voucher.totalQuota} digunakan',
-                        style: const TextStyle(
+                        hasClaimLimit
+                            ? '${(voucher.claimLimit! - voucher.claimCount).clamp(0, voucher.claimLimit!)} customer yang bisa memiliki'
+                            : 'Tanpa batas klaim',
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColor.textPrimary,
+                          color: hasClaimLimit
+                              ? AppColor.textPrimary
+                              : AppColor.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -498,18 +506,20 @@ class _VoucherCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: usagePercent,
-                    backgroundColor: AppColor.progressBackground,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      usagePercent >= 1.0 ? AppColor.error : AppColor.primary,
+                if (hasClaimLimit) ...[
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: claimProgress,
+                      backgroundColor: AppColor.progressBackground,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        claimProgress >= 1.0 ? AppColor.error : AppColor.primary,
+                      ),
+                      minHeight: 5,
                     ),
-                    minHeight: 5,
                   ),
-                ),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [

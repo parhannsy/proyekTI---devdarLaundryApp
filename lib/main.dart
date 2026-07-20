@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -31,26 +30,22 @@ void main() async {
   }
 
   // ── Inisialisasi Firebase ───────────────────────────────────
-  // Di web: Firebase JS SDK sengaja tidak di-load (via flutterfire_ignore_scripts
-  // di index.html) karena web appId masih placeholder. Kita pake Mock data saja.
-  // Di mobile: coba init Firebase, kalau gagal → fallback Mock.
-  if (kIsWeb) {
-    debugPrint('[Main] 🌐 Web mode — skip Firebase init, pakai Mock data.');
-  } else {
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 10));
-      await SeedService.seedIfNeeded()
-          .timeout(const Duration(seconds: 10));
-      firebaseAvailable = true;
-      debugPrint('[Main] ✅ Firebase berhasil diinisialisasi.');
-    } on TimeoutException {
-      debugPrint('[Main] ⏱️ Firebase init timeout — fallback ke Mock Data.');
-    } catch (e) {
-      debugPrint('[Main] ⚠️ Firebase gagal init — fallback ke Mock Data.');
-      debugPrint('[Main] Detail error: $e');
-    }
+  // Coba init Firebase di semua platform (mobile + web).
+  // Kalau gagal (misal koneksi jelek atau web JS SDK error),
+  // fallback otomatis ke Mock data tanpa mengganggu user.
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 10));
+    await SeedService.seedIfNeeded()
+        .timeout(const Duration(seconds: 10));
+    firebaseAvailable = true;
+    debugPrint('[Main] ✅ Firebase berhasil diinisialisasi.');
+  } on TimeoutException {
+    debugPrint('[Main] ⏱️ Firebase init timeout — fallback ke Mock Data.');
+  } catch (e) {
+    debugPrint('[Main] ⚠️ Firebase gagal init — fallback ke Mock Data.');
+    debugPrint('[Main] Detail error: $e');
   }
 
   // Mengunci orientasi agar konsisten di semua device

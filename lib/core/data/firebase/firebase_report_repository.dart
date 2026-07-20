@@ -68,7 +68,7 @@ class FirebaseReportRepository implements ReportRepository {
 
     return ReportSummary(
       totalRevenue: totalRevenue,
-      revenueGrowth: 0, // TODO: bandingkan dengan periode sebelumnya
+      revenueGrowth: 0, 
       totalOrders: totalOrders,
       ordersGrowth: 0,
       newCustomers: newCustomers,
