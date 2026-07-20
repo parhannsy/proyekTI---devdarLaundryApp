@@ -1,114 +1,10 @@
 import 'dart:async';
 import '../models/models.dart';
 import '../repositories/order_repository.dart';
+import 'mock_data_store.dart';
 
 class MockOrderRepository implements OrderRepository {
-  final List<OrderModel> _orders = [
-    OrderModel(
-      id: 'ORD-2026-001',
-      customerId: 'cust-001',
-      customerName: 'Ahmad Farhan',
-      customerAddress: 'Jl. Merdeka No. 10, Jakarta',
-      category: OrderCategory.pakaian,
-      itemName: 'Baju & Celana',
-      unitType: UnitType.kiloan,
-      quantity: 3.5,
-      status: OrderStatus.processing,
-      totalPrice: 0,
-      pickupDate: DateTime.now(),
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-002',
-      customerId: 'cust-001',
-      customerName: 'Ahmad Farhan',
-      customerAddress: 'Jl. Merdeka No. 10, Jakarta',
-      category: OrderCategory.carpet,
-      itemName: 'Karpet Ruang Tamu',
-      unitType: UnitType.meteran,
-      quantity: 4.0,
-      status: OrderStatus.accepted,
-      totalPrice: 0,
-      estimatedTotal: 80000,
-      pickupDate: DateTime.now().add(const Duration(days: 1)),
-      createdAt: DateTime.now().subtract(const Duration(hours: 10)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-003',
-      customerId: 'cust-002',
-      customerName: 'Siti Rahayu',
-      customerAddress: 'Jl. Sudirman No. 25, Jakarta',
-      category: OrderCategory.pakaian,
-      itemName: 'Seragam Kerja',
-      unitType: UnitType.kiloan,
-      quantity: 2.0,
-      status: OrderStatus.request,
-      totalPrice: 0,
-      pickupDate: DateTime.now(),
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-004',
-      customerId: 'cust-003',
-      customerName: 'Budi Santoso',
-      customerAddress: 'Jl. Gatot Subroto No. 5, Jakarta',
-      category: OrderCategory.shoes,
-      itemName: 'Sepatu Olahraga',
-      unitType: UnitType.satuan,
-      quantity: 2,
-      status: OrderStatus.completed,
-      totalPrice: 50000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 2)),
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      completedAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-005',
-      customerId: 'cust-002',
-      customerName: 'Siti Rahayu',
-      customerAddress: 'Jl. Sudirman No. 25, Jakarta',
-      category: OrderCategory.perlengkapanKamar,
-      itemName: 'Sprei & Sarung Bantal',
-      unitType: UnitType.satuan,
-      quantity: 2,
-      status: OrderStatus.delivering,
-      totalPrice: 90000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 3)),
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-006',
-      customerId: 'cust-004',
-      customerName: 'Dewi Kusuma',
-      customerAddress: 'Jl. Thamrin No. 8, Jakarta',
-      category: OrderCategory.perlengkapanKamar,
-      itemName: 'Handuk & Sprei',
-      unitType: UnitType.kiloan,
-      quantity: 4.0,
-      status: OrderStatus.delivering,
-      totalPrice: 40000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(hours: 8)),
-      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-007',
-      customerId: 'cust-005',
-      customerName: 'Reza Pratama',
-      customerAddress: 'Jl. Kuningan No. 15, Jakarta',
-      category: OrderCategory.pakaian,
-      itemName: 'Kaos & Jeans',
-      unitType: UnitType.kiloan,
-      quantity: 2.5,
-      status: OrderStatus.rejected,
-      totalPrice: 0,
-      rejectionReason: 'Lokasi diluar jangkauan pengiriman',
-      pickupDate: DateTime.now().subtract(const Duration(days: 1)),
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-  ];
+  List<OrderModel> get _orders => MockDataStore.orders;
 
   @override
   Future<List<OrderModel>> getAllOrders() async {
@@ -202,8 +98,6 @@ class MockOrderRepository implements OrderRepository {
 
   @override
   Stream<List<OrderModel>> streamAllOrders() {
-    // StreamController + timer periodik untuk simulasi realtime
-    // Setiap 3 detik, emit data terbaru (termasuk perubahan dari createOrder dll)
     final controller = StreamController<List<OrderModel>>.broadcast();
 
     final timer = Timer.periodic(const Duration(seconds: 3), (_) {
@@ -212,10 +106,8 @@ class MockOrderRepository implements OrderRepository {
       }
     });
 
-    // Bersihin timer otomatis saat stream subscription di-cancel
     controller.onCancel = () => timer.cancel();
 
-    // Emit data pertama segera
     Future.microtask(() {
       if (!controller.isClosed) {
         controller.add(List.from(_orders));

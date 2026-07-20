@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../repositories/auth_repository.dart';
+import 'mock_data_store.dart';
 
 /// Implementasi mock untuk development/demo. Tidak butuh backend.
 class MockAuthRepository implements AuthRepository {
@@ -93,6 +94,9 @@ class MockAuthRepository implements AuthRepository {
     );
 
     _registeredUsers.add(newUser);
+    // Juga tambahkan ke MockDataStore agar MockCustomerRepository
+    // dan stream-nya langsung mendeteksi data baru.
+    MockDataStore.customers.add(newUser);
     return newUser;
   }
 

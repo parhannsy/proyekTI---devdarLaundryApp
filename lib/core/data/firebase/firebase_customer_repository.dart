@@ -1,23 +1,64 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
 import '../../repositories/customer_repository.dart';
 
 /// Implementasi [CustomerRepository] menggunakan Cloud Firestore.
+///
+/// Pagination menggunakan cursor-based `startAfterDocument()` dengan
+/// default ordering document ID — TIDAK membutuhkan composite index.
+/// Stream menggunakan `.snapshots()` untuk realtime update.
 class FirebaseCustomerRepository implements CustomerRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Query get _baseQuery => _firestore
+      .collection('users')
+      .where('role', isEqualTo: 'customer')
+      .orderBy(FieldPath.documentId);
+
   @override
   Future<List<UserModel>> getAllCustomers() async {
-    final snapshot = await _firestore
-        .collection('users')
-        .where('role', isEqualTo: 'customer')
-        .get();
-
+    final snapshot = await _baseQuery.get();
     final customers =
         snapshot.docs.map((doc) => _userFromDoc(doc)).toList();
-    // Sortir di Dart untuk menghindari kebutuhan composite index Firestore
     customers.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return customers;
+  }
+
+  @override
+  Future<CustomerPageResult> getCustomersPage({
+    required int limit,
+    Object? cursor,
+  }) async {
+    Query query = _baseQuery.limit(limit);
+
+    if (cursor != null) {
+      query = query.startAfterDocument(cursor as DocumentSnapshot);
+    }
+
+    final snapshot = await query.get();
+    final docs = snapshot.docs;
+    final hasMore = docs.length >= limit;
+
+    final customers =
+        docs.map((doc) => _userFromDoc(doc)).toList();
+
+    return CustomerPageResult(
+      customers: customers,
+      hasMore: hasMore,
+      cursor: docs.isNotEmpty ? docs.last : null,
+    );
+  }
+
+  @override
+  Stream<List<UserModel>> streamCustomers() {
+    return _baseQuery.snapshots().map((snapshot) {
+      final customers = snapshot.docs
+          .map((doc) => _userFromDoc(doc))
+          .toList();
+      customers.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return customers;
+    });
   }
 
   @override

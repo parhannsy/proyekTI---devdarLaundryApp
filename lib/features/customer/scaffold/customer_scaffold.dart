@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/connection_indicator.dart';
 
 /// Shell scaffold untuk semua halaman customer.
 ///
@@ -23,6 +24,7 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
     AppRoutes.customerDashboard,
     AppRoutes.customerOrders,
     AppRoutes.customerMissions,
+    AppRoutes.customerDiscount,
     AppRoutes.customerProfile,
   ];
 
@@ -30,6 +32,7 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
     _NavItem(Icons.home_outlined, Icons.home_rounded, 'Beranda'),
     _NavItem(Icons.inventory_2_outlined, Icons.inventory_2_rounded, 'Pesanan'),
     _NavItem(Icons.track_changes_outlined, Icons.track_changes_rounded, 'Misi'),
+    _NavItem(Icons.local_offer_outlined, Icons.local_offer_rounded, 'Diskon'),
     _NavItem(Icons.person_outline, Icons.person_rounded, 'Profil'),
   ];
 
@@ -86,10 +89,22 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
       extendBody: true,
       backgroundColor: AppColor.background,
       body: body,
-      bottomNavigationBar: _MinimalBottomBar(
-        currentIndex: currentIndex,
-        onTap: _onNavigate,
-        items: _navItems,
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 2),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ConnectionIndicator(compact: true),
+            ],
+          ),
+          _MinimalBottomBar(
+            currentIndex: currentIndex,
+            onTap: _onNavigate,
+            items: _navItems,
+          ),
+        ],
       ),
     );
   }

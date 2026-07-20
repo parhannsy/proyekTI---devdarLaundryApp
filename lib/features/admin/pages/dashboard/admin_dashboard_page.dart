@@ -1,16 +1,40 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
+import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
+import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_stat_card.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 
-class AdminDashboardPage extends StatelessWidget {
+class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
+
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  final NumberFormat _fmt = NumberFormat.compactCurrency(locale: 'id', symbol: 'Rp ', decimalDigits: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().listenAllOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<OrderProvider>().stopListening();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,106 +42,179 @@ class AdminDashboardPage extends StatelessWidget {
     final userName = auth.currentUser?.name ?? 'Admin Devdara';
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 700;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                AnimatedFadeSlider(
-                  index: 1,
-                  child: AdminPageHeader(
-                    title: 'Dashboard',
-                    subtitle: 'Selamat datang, $userName',
+      body: Consumer<OrderProvider>(
+        builder: (context, orderProv, _) {
+          final orders = orderProv.orders;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 700;
+              return RefreshIndicator(
+                onRefresh: () => orderProv.loadAllOrders(),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      AnimatedFadeSlider(
+                        index: 1,
+                        child: AdminPageHeader(
+                          title: 'Dashboard',
+                          subtitle: orderProv.isLoading
+                              ? 'Memuat data...'
+                              : 'Selamat datang, $userName',
+                        ),
+                      ),
+
+                      // Stat cards grid — real data
+                      AnimatedFadeSlider(
+                        index: 2,
+                        child: _buildStatGrid(context, isWide, orders),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Recent orders + quick actions
+                      AnimatedFadeSlider(
+                        index: 3,
+                        child: isWide
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: _buildRecentOrders(context, orders),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _buildQuickActions(context),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildRecentOrders(context, orders),
+                                  const SizedBox(height: 16),
+                                  _buildQuickActions(context),
+                                ],
+                              ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Status summary — real data
+                      AnimatedFadeSlider(
+                        index: 4,
+                        child: _buildStatusSummary(context, orderProv, orders),
+                      ),
+                    ],
                   ),
                 ),
-
-                // Stat cards grid
-                AnimatedFadeSlider(
-                  index: 2,
-                  child: _buildStatGrid(context, isWide),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Recent orders + quick actions
-                AnimatedFadeSlider(
-                  index: 3,
-                  child: isWide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _buildRecentOrders(context),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              flex: 2,
-                              child: _buildQuickActions(context),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _buildRecentOrders(context),
-                            const SizedBox(height: 16),
-                            _buildQuickActions(context),
-                          ],
-                        ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Status summary
-                AnimatedFadeSlider(
-                  index: 4,
-                  child: _buildStatusSummary(context),
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildStatGrid(BuildContext context, bool isWide) {
+  // ── Stat Cards ─────────────────────────────────────────────
+
+  Widget _buildStatGrid(BuildContext context, bool isWide, List<OrderModel> orders) {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+
+    // Pendapatan bulan ini dari completed orders
+    final thisMonthRevenue = orders
+        .where((o) =>
+            o.status == OrderStatus.completed &&
+            o.completedAt != null &&
+            !o.completedAt!.isBefore(monthStart))
+        .fold<double>(0, (sum, o) => sum + o.finalPrice);
+
+    // Total order bulan ini
+    final thisMonthOrders = orders
+        .where((o) => !o.createdAt.isBefore(monthStart))
+        .length;
+
+    // Unique customers
+    final allCustomers = orders.map((o) => o.customerId).toSet().length;
+    final activeMonthCustomers = orders
+        .where((o) => !o.createdAt.isBefore(monthStart))
+        .map((o) => o.customerId)
+        .toSet()
+        .length;
+
+    // Growth dibanding bulan lalu
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthOrders = orders
+        .where((o) =>
+            !o.createdAt.isBefore(lastMonthStart) && o.createdAt.isBefore(monthStart))
+        .length;
+    final lastMonthRevenue = orders
+        .where((o) =>
+            o.status == OrderStatus.completed &&
+            o.completedAt != null &&
+            !o.completedAt!.isBefore(lastMonthStart) &&
+            o.completedAt!.isBefore(monthStart))
+        .fold<double>(0, (sum, o) => sum + o.finalPrice);
+
+    final revenueGrowth = lastMonthRevenue > 0
+        ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100)
+        : 0.0;
+    final orderGrowth = lastMonthOrders > 0
+        ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders * 100)
+        : 0.0;
+
+    // Pelanggan baru bulan ini (perkiraan dari first order)
+    final newCustomerIds = <String>{};
+    for (final o in orders) {
+      if (!o.createdAt.isBefore(monthStart) && !o.createdAt.isAfter(now)) {
+        // Cek apakah ini order pertama customer ini
+        final firstOrder = orders
+            .where((co) => co.customerId == o.customerId)
+            .fold<DateTime?>(null, (earliest, co) {
+          if (earliest == null || co.createdAt.isBefore(earliest)) return co.createdAt;
+          return earliest;
+        });
+        if (firstOrder != null && !firstOrder.isBefore(monthStart)) {
+          newCustomerIds.add(o.customerId);
+        }
+      }
+    }
+
     final stats = [
-      const AdminStatCard(
-        title: 'Total Pendapatan',
-        value: 'Rp 4,85 jt',
-        subtitle: 'Bulan ini',
+      AdminStatCard(
+        title: 'Pendapatan (Bulan Ini)',
+        value: _fmt.format(thisMonthRevenue),                        subtitle: 'Dari $thisMonthOrders pesanan',
         icon: Icons.attach_money_rounded,
         color: AppColor.success,
-        growthPercent: 12.5,
+        growthPercent: revenueGrowth,
       ),
-      const AdminStatCard(
+      AdminStatCard(
         title: 'Total Order',
-        value: '127',
-        subtitle: 'Bulan ini',
+        value: '$thisMonthOrders',
+        subtitle: orders.isEmpty ? 'Memuat...' : 'Bulan ini',
         icon: Icons.inventory_2_outlined,
         color: AppColor.primary,
-        growthPercent: 8.0,
+        growthPercent: orderGrowth,
       ),
-      const AdminStatCard(
+      AdminStatCard(
         title: 'Pelanggan Aktif',
-        value: '89',
-        subtitle: 'Dari 105 total',
+        value: '$activeMonthCustomers',
+        subtitle: 'Dari $allCustomers total',
         icon: Icons.people_outline,
         color: AppColor.info,
-        growthPercent: 5.2,
+        growthPercent: null,
       ),
-      const AdminStatCard(
+      AdminStatCard(
         title: 'Pelanggan Baru',
-        value: '23',
+        value: '${newCustomerIds.length}',
         subtitle: 'Bulan ini',
         icon: Icons.person_add_outlined,
         color: AppColor.warning,
-        growthPercent: -2.1,
+        growthPercent: null,
       ),
     ];
 
@@ -135,37 +232,33 @@ class AdminDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentOrders(BuildContext context) {
-    final orders = [
-      _DashOrderRow(
-        id: 'ORD-042',
-        name: 'Ahmad Farhan',
-        type: 'Reguler 3.5kg',
-        status: 'Dicuci',
-        color: AppColor.info,
-      ),
-      _DashOrderRow(
-        id: 'ORD-041',
-        name: 'Ahmad Farhan',
-        type: 'Karpet 2pcs',
-        status: 'Diterima',
-        color: AppColor.warning,
-      ),
-      _DashOrderRow(
-        id: 'ORD-040',
-        name: 'Siti Rahayu',
-        type: 'Express 2kg',
-        status: 'Siap',
-        color: AppColor.success,
-      ),
-      _DashOrderRow(
-        id: 'ORD-037',
-        name: 'Dewi Kusuma',
-        type: 'Reguler 4kg',
-        status: 'Disetrika',
-        color: AppColor.primaryLight,
-      ),
-    ];
+  // ── Recent Orders ──────────────────────────────────────────
+
+  /// Urutan prioritas status: Permohonan → Diterima → Diproses → Diantar → Selesai
+  int _statusPriority(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.request:
+        return 0;
+      case OrderStatus.accepted:
+        return 1;
+      case OrderStatus.pickedUp:
+        return 2;
+      case OrderStatus.processing:
+        return 3;
+      case OrderStatus.delivering:
+        return 4;
+      case OrderStatus.completed:
+        return 5;
+      default:
+        return 9; // rejected, cancelled di belakang
+    }
+  }
+
+  Widget _buildRecentOrders(BuildContext context, List<OrderModel> orders) {
+    // Urutkan: Permohonan → Diterima → Diproses → Diantar → Selesai
+    final sorted = List<OrderModel>.from(orders)
+      ..sort((a, b) => _statusPriority(a.status).compareTo(_statusPriority(b.status)));
+    final recent = sorted.length > 5 ? sorted.sublist(0, 5) : sorted;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -204,13 +297,25 @@ class AdminDashboardPage extends StatelessWidget {
             ],
           ),
           const Divider(height: 16),
-          ...orders.map((o) => _buildOrderRow(o)),
+          if (recent.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Belum ada pesanan',
+                  style: TextStyle(color: AppColor.textMuted, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...recent.map((o) => _buildOrderRow(o)),
         ],
       ),
     );
   }
 
-  Widget _buildOrderRow(_DashOrderRow o) {
+  Widget _buildOrderRow(OrderModel o) {
+    final (statusLabel, statusColor) = _statusDisplay(o.status);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -218,12 +323,12 @@ class AdminDashboardPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: o.color.withValues(alpha: 0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.local_laundry_service_outlined,
-              color: AppColor.primaryLight,
+            child: Icon(
+              o.status.iconData,
+              color: statusColor,
               size: 18,
             ),
           ),
@@ -233,7 +338,7 @@ class AdminDashboardPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  o.id,
+                  o.itemName,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -244,7 +349,7 @@ class AdminDashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${o.name} • ${o.type}',
+                  '${o.customerName} • ${o.quantityLabel}',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColor.textSecondary,
@@ -260,14 +365,14 @@ class AdminDashboardPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: o.color.withValues(alpha: 0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                o.status,
+                statusLabel,
                 style: TextStyle(
                   fontSize: 11,
-                  color: o.color,
+                  color: statusColor,
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,
@@ -279,6 +384,29 @@ class AdminDashboardPage extends StatelessWidget {
       ),
     );
   }
+
+  (String, Color) _statusDisplay(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.request:
+        return ('Permohonan', AppColor.warning);
+      case OrderStatus.accepted:
+        return ('Diterima', AppColor.info);
+      case OrderStatus.rejected:
+        return ('Ditolak', AppColor.error);
+      case OrderStatus.pickedUp:
+        return ('Diangkut', AppColor.warning);
+      case OrderStatus.processing:
+        return ('Diproses', AppColor.primaryLight);
+      case OrderStatus.delivering:
+        return ('Diantar', AppColor.warning);
+      case OrderStatus.completed:
+        return ('Selesai', AppColor.success);
+      case OrderStatus.cancelled:
+        return ('Batal', AppColor.error);
+    }
+  }
+
+  // ── Quick Actions ──────────────────────────────────────────
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
@@ -377,7 +505,19 @@ class AdminDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusSummary(BuildContext context) {
+  // ── Status Summary ─────────────────────────────────────────
+
+  Widget _buildStatusSummary(BuildContext context, OrderProvider orderProv, List<OrderModel> orders) {
+    final now = DateTime.now();
+    final todayCompleted = orders
+        .where((o) =>
+            o.status == OrderStatus.completed &&
+            o.completedAt != null &&
+            o.completedAt!.year == now.year &&
+            o.completedAt!.month == now.month &&
+            o.completedAt!.day == now.day)
+        .length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -407,32 +547,16 @@ class AdminDashboardPage extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _StatusChip(label: 'Menunggu', count: 3, color: AppColor.warning),
-              _StatusChip(label: 'Diproses', count: 8, color: AppColor.info),
-              _StatusChip(label: 'Siap', count: 5, color: AppColor.success),
-              _StatusChip(
-                label: 'Selesai Hari Ini',
-                count: 12,
-                color: AppColor.primary,
-              ),
+              _StatusChip(label: 'Menunggu', count: orderProv.pendingCount, color: AppColor.warning),
+              _StatusChip(label: 'Diproses', count: orderProv.processingCount, color: AppColor.info),
+              _StatusChip(label: 'Diantar', count: orderProv.deliveringCount, color: AppColor.primaryLight),
+              _StatusChip(label: 'Selesai Hari Ini', count: todayCompleted, color: AppColor.success),
             ],
           ),
         ],
       ),
     );
   }
-}
-
-class _DashOrderRow {
-  final String id, name, type, status;
-  final Color color;
-  const _DashOrderRow({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.status,
-    required this.color,
-  });
 }
 
 class _QuickAction {

@@ -27,8 +27,15 @@ class _AdminReportPageState extends State<AdminReportPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ReportProvider>().loadSummary();
+      context.read<ReportProvider>().listenSummary();
     });
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan stream subscription agar tidak memory leak
+    context.read<ReportProvider>().stopListening();
+    super.dispose();
   }
 
   (DateTime, DateTime) _dateRange() {
@@ -64,12 +71,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
               children: [
                 // ── Header + Period Filter ──
                 AnimatedFadeSlider(
-                  index: 1,
-                  child: AdminPageHeader(
+                  index: 1,                    child: AdminPageHeader(
                     title: 'Laporan',
                     subtitle: provider.isLoading
                         ? 'Memuat data...'
-                        : 'Ringkasan performa bisnis',
+                        : '📊 Fokus pada pesanan yang sudah selesai',
                     actions: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -153,29 +159,33 @@ class _AdminReportPageState extends State<AdminReportPage> {
                           childAspectRatio: cols == 4 ? 1.1 : 1.0,
                           children: [
                             AdminStatCard(
-                              title: 'Pendapatan',
+                              title: 'Pendapatan (Selesai)',
                               value: _fmt.format(s.totalRevenue),
+                              subtitle: 'Dari pesanan selesai',
                               icon: Icons.attach_money_rounded,
                               color: AppColor.success,
                               growthPercent: s.revenueGrowth,
                             ),
                             AdminStatCard(
-                              title: 'Total Order',
+                              title: 'Pesanan Selesai',
                               value: '${s.totalOrders}',
-                              icon: Icons.inventory_2_outlined,
+                              subtitle: 'Completed orders',
+                              icon: Icons.task_alt_rounded,
                               color: AppColor.primary,
                               growthPercent: s.ordersGrowth.toDouble(),
                             ),
                             AdminStatCard(
                               title: 'Rata-rata/Order',
                               value: _fmt.format(s.averageOrderValue),
+                              subtitle: 'Per pesanan selesai',
                               icon: Icons.calculate_outlined,
                               color: AppColor.info,
                               growthPercent: null,
                             ),
                             AdminStatCard(
-                              title: 'Pelanggan Aktif',
+                              title: 'Pelanggan (Selesai)',
                               value: '${s.activeCustomers}',
+                              subtitle: 'Dengan order selesai',
                               icon: Icons.people_outline,
                               color: AppColor.warning,
                               growthPercent: null,
@@ -200,7 +210,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   // Category breakdown
                   AnimatedFadeSlider(
                     index: 4,
-                    child: _buildCategoryBreakdown(summary),
+                    child: _buildCategoryBreakdown(provider, summary),
                   ),
 
                   const SizedBox(height: 20),
@@ -330,9 +340,10 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
   // ── Category Breakdown ────────────────────────────────────
 
-  Widget _buildCategoryBreakdown(ReportSummary summary) {
-    // Data kategori dihitung dari semua provider orders (tidak tersedia via summary)
-    // Gunakan semua order — untuk sekarang pakai data simple
+  Widget _buildCategoryBreakdown(ReportProvider provider, ReportSummary summary) {
+    final catRevenue = provider.categoryRevenue;
+    final totalCatRevenue = catRevenue.values.fold<double>(0, (a, b) => a + b);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -358,41 +369,42 @@ class _AdminReportPageState extends State<AdminReportPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _CategoryRow(
-            data: _CategoryData(
-              name: 'Pakaian',
-              percentage: 0.45,
-              revenue: _fmt.format(summary.totalRevenue * 0.45),
-              color: AppColor.primary,
-            ),
-          ),
-          _CategoryRow(
-            data: _CategoryData(
-              name: 'Karpet',
-              percentage: 0.20,
-              revenue: _fmt.format(summary.totalRevenue * 0.20),
-              color: AppColor.warning,
-            ),
-          ),
-          _CategoryRow(
-            data: _CategoryData(
-              name: 'Sepatu',
-              percentage: 0.15,
-              revenue: _fmt.format(summary.totalRevenue * 0.15),
-              color: AppColor.info,
-            ),
-          ),
-          _CategoryRow(
-            data: _CategoryData(
-              name: 'Perlengkapan Kamar',
-              percentage: 0.20,
-              revenue: _fmt.format(summary.totalRevenue * 0.20),
-              color: const Color(0xFFAB47BC),
-            ),
-          ),
+          if (catRevenue.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('Belum ada data kategori',
+                    style: TextStyle(color: AppColor.textMuted, fontSize: 13)),
+              ),
+            )
+          else
+            ...catRevenue.entries.map((entry) {
+              final percentage = totalCatRevenue > 0 ? entry.value / totalCatRevenue : 0.0;
+              return _CategoryRow(
+                data: _CategoryData(
+                  name: entry.key.label,
+                  percentage: percentage,
+                  revenue: _fmt.format(entry.value),
+                  color: _categoryColor(entry.key),
+                ),
+              );
+            }),
         ],
       ),
     );
+  }
+
+  Color _categoryColor(OrderCategory cat) {
+    switch (cat) {
+      case OrderCategory.pakaian:
+        return AppColor.primary;
+      case OrderCategory.carpet:
+        return AppColor.warning;
+      case OrderCategory.shoes:
+        return AppColor.info;
+      case OrderCategory.perlengkapanKamar:
+        return const Color(0xFFAB47BC);
+    }
   }
 
   // ── Top Customers ─────────────────────────────────────────
@@ -414,39 +426,67 @@ class _AdminReportPageState extends State<AdminReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ringkasan',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              color: AppColor.textPrimary,
-            ),
+          Row(
+            children: [
+              const Text(
+                'Ringkasan Pesanan Selesai',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColor.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColor.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, size: 12, color: AppColor.success),
+                    SizedBox(width: 4),
+                    Text(
+                      'Completed',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColor.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const Divider(height: 24),
-          _summaryRow('Total Order', '${summary.totalOrders}', Icons.receipt_long_outlined),
-          _summaryRow('Pendapatan', _fmt.format(summary.totalRevenue), Icons.attach_money_rounded),
-          _summaryRow('Rata-rata/Order', _fmt.format(summary.averageOrderValue), Icons.calculate_outlined),
-          _summaryRow('Pelanggan Aktif', '${summary.activeCustomers}', Icons.people_outline),
+          _summaryRow('Pesanan Selesai', '${summary.totalOrders}', Icons.task_alt_rounded, iconColor: AppColor.primary),
+          _summaryRow('Pendapatan', _fmt.format(summary.totalRevenue), Icons.attach_money_rounded, iconColor: AppColor.success),
+          _summaryRow('Rata-rata/Order', _fmt.format(summary.averageOrderValue), Icons.calculate_outlined, iconColor: AppColor.info),
+          _summaryRow('Pelanggan', '${summary.activeCustomers}', Icons.people_outline, iconColor: AppColor.warning),
           if (summary.newCustomers > 0)
-            _summaryRow('Pelanggan Baru', '${summary.newCustomers}', Icons.person_add_outlined),
+            _summaryRow('Pelanggan Baru', '${summary.newCustomers}', Icons.person_add_outlined, iconColor: AppColor.success),
           if (summary.revenueGrowth != 0)
             _summaryRow(
               'Pertumbuhan Revenue',
               '${summary.revenueGrowth.toStringAsFixed(1)}%',
               summary.revenueGrowth > 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
               valueColor: summary.revenueGrowth > 0 ? AppColor.success : AppColor.error,
+              iconColor: summary.revenueGrowth > 0 ? AppColor.success : AppColor.error,
             ),
         ],
       ),
     );
   }
 
-  Widget _summaryRow(String label, String value, IconData icon, {Color? valueColor}) {
+  Widget _summaryRow(String label, String value, IconData icon, {Color? valueColor, Color? iconColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColor.primary),
+          Icon(icon, size: 18, color: iconColor ?? AppColor.primary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(label,

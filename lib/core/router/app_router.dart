@@ -13,6 +13,7 @@ import '../../features/customer/pages/order/index.dart';
 import '../../features/customer/pages/order/create_order_page.dart';
 import '../../features/customer/pages/mission/index.dart';
 import '../../features/customer/pages/profil/index.dart';
+import '../../features/customer/pages/discount/index.dart';
 import '../../features/admin/scaffold/admin_scaffold.dart';
 import '../../features/admin/pages/dashboard/admin_dashboard_page.dart';
 import '../../features/admin/pages/orders/admin_order_page.dart';
@@ -30,6 +31,7 @@ class AppRoutes {
   static const customerOrders = '/customer/orders';
   static const customerMissions = '/customer/missions';
   static const customerProfile = '/customer/profile';
+  static const customerDiscount = '/customer/discount';
   static const adminDashboard = '/admin/dashboard';
   static const adminOrders = '/admin/orders';
   static const adminVouchers = '/admin/vouchers';
@@ -130,6 +132,11 @@ class AppRouter {
               path: AppRoutes.customerProfile,
               name: 'customerProfile',
               builder: (_, __) => const ProfilePage(),
+            ),
+            GoRoute(
+              path: AppRoutes.customerDiscount,
+              name: 'customerDiscount',
+              builder: (_, __) => const DiscountPage(),
             ),
           ],
         ),

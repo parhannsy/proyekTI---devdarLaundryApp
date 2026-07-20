@@ -1,141 +1,14 @@
+import 'dart:async';
 import '../models/models.dart';
 import '../repositories/report_repository.dart';
+import 'mock_data_store.dart';
 
-/// Implementasi mock yang menghitung laporan dari data order real (sama dengan MockOrderRepository).
+/// Implementasi mock yang menghitung laporan dari [MockDataStore.orders].
+///
+/// Data order menggunakan shared store yang SAMA dengan [MockOrderRepository],
+/// jadi perubahan dari halaman order langsung terlihat di laporan secara realtime.
 class MockReportRepository implements ReportRepository {
-  final List<OrderModel> _orders = [
-    OrderModel(
-      id: 'ORD-2026-001',
-      customerId: 'cust-001',
-      customerName: 'Ahmad Farhan',
-      category: OrderCategory.pakaian,
-      itemName: 'Baju & Celana',
-      unitType: UnitType.kiloan,
-      quantity: 3.5,
-      status: OrderStatus.processing,
-      totalPrice: 35000,
-      pickupDate: DateTime.now(),
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-002',
-      customerId: 'cust-001',
-      customerName: 'Ahmad Farhan',
-      category: OrderCategory.carpet,
-      itemName: 'Karpet Ruang Tamu',
-      unitType: UnitType.meteran,
-      quantity: 4.0,
-      status: OrderStatus.accepted,
-      totalPrice: 80000,
-      estimatedTotal: 80000,
-      pickupDate: DateTime.now().add(const Duration(days: 1)),
-      createdAt: DateTime.now().subtract(const Duration(hours: 10)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-003',
-      customerId: 'cust-002',
-      customerName: 'Siti Rahayu',
-      category: OrderCategory.pakaian,
-      itemName: 'Seragam Kerja',
-      unitType: UnitType.kiloan,
-      quantity: 2.0,
-      status: OrderStatus.request,
-      totalPrice: 0,
-      pickupDate: DateTime.now(),
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-004',
-      customerId: 'cust-003',
-      customerName: 'Budi Santoso',
-      category: OrderCategory.shoes,
-      itemName: 'Sepatu Olahraga',
-      unitType: UnitType.satuan,
-      quantity: 2,
-      status: OrderStatus.completed,
-      totalPrice: 50000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 2)),
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      completedAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-005',
-      customerId: 'cust-002',
-      customerName: 'Siti Rahayu',
-      category: OrderCategory.perlengkapanKamar,
-      itemName: 'Sprei & Sarung Bantal',
-      unitType: UnitType.satuan,
-      quantity: 2,
-      status: OrderStatus.delivering,
-      totalPrice: 90000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 3)),
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-006',
-      customerId: 'cust-004',
-      customerName: 'Dewi Kusuma',
-      category: OrderCategory.perlengkapanKamar,
-      itemName: 'Handuk & Sprei',
-      unitType: UnitType.kiloan,
-      quantity: 4.0,
-      status: OrderStatus.delivering,
-      totalPrice: 40000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(hours: 8)),
-      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-007',
-      customerId: 'cust-005',
-      customerName: 'Reza Pratama',
-      category: OrderCategory.pakaian,
-      itemName: 'Kaos & Jeans',
-      unitType: UnitType.kiloan,
-      quantity: 2.5,
-      status: OrderStatus.rejected,
-      totalPrice: 0,
-      rejectionReason: 'Lokasi diluar jangkauan pengiriman',
-      pickupDate: DateTime.now().subtract(const Duration(days: 1)),
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-  ];
-
-  // Hari-hari sebelumnya untuk daily stats
-  final List<OrderModel> _previousOrders = [
-    OrderModel(
-      id: 'ORD-2026-008',
-      customerId: 'cust-001',
-      customerName: 'Ahmad Farhan',
-      category: OrderCategory.pakaian,
-      itemName: 'Baju Sehari-hari',
-      unitType: UnitType.kiloan,
-      quantity: 2.0,
-      status: OrderStatus.completed,
-      totalPrice: 28000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 30)),
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      completedAt: DateTime.now().subtract(const Duration(days: 29)),
-    ),
-    OrderModel(
-      id: 'ORD-2026-009',
-      customerId: 'cust-002',
-      customerName: 'Siti Rahayu',
-      category: OrderCategory.pakaian,
-      itemName: 'Seragam harian',
-      unitType: UnitType.kiloan,
-      quantity: 1.5,
-      status: OrderStatus.completed,
-      totalPrice: 22000,
-      discount: 0,
-      pickupDate: DateTime.now().subtract(const Duration(days: 25)),
-      createdAt: DateTime.now().subtract(const Duration(days: 25)),
-      completedAt: DateTime.now().subtract(const Duration(days: 24)),
-    ),
-  ];
+  List<OrderModel> get _allOrders => MockDataStore.orders;
 
   @override
   Future<ReportSummary> getSummary({
@@ -144,8 +17,7 @@ class MockReportRepository implements ReportRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final allOrders = [..._orders, ..._previousOrders];
-    final inRange = allOrders
+    final inRange = _allOrders
         .where((o) =>
             !o.createdAt.isBefore(from) && !o.createdAt.isAfter(to))
         .toList();
@@ -156,27 +28,41 @@ class MockReportRepository implements ReportRepository {
 
     final totalRevenue =
         completedInRange.fold<double>(0, (sum, o) => sum + o.finalPrice);
-    final totalOrders = inRange.length;
+    final totalOrders = completedInRange.length;
     final avgOrderValue =
         completedInRange.isEmpty ? 0.0 : totalRevenue / completedInRange.length;
 
-    // Hitung periode sebelumnya (sama panjang)
     final prevFrom = from.subtract(to.difference(from));
-    final prevOrders = allOrders
+    final prevCompleted = _allOrders
         .where((o) =>
-            !o.createdAt.isBefore(prevFrom) && o.createdAt.isBefore(from))
+            !o.createdAt.isBefore(prevFrom) &&
+            o.createdAt.isBefore(from) &&
+            o.status == OrderStatus.completed)
         .toList();
-    final prevRevenue = prevOrders.fold<double>(
-        0, (sum, o) => sum + (o.status == OrderStatus.completed ? o.finalPrice : 0));
+    final prevRevenue = prevCompleted.fold<double>(
+        0, (sum, o) => sum + o.finalPrice);
     final revenueGrowth =
         prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue * 100) : 0.0;
 
     final ordersGrowth =
-        prevOrders.isEmpty ? 0 : totalOrders - prevOrders.length;
+        prevCompleted.isEmpty ? 0 : totalOrders - prevCompleted.length;
 
-    // Unique customers
     final activeCustomers =
-        inRange.map((o) => o.customerId).toSet().length;
+        completedInRange.map((o) => o.customerId).toSet().length;
+
+    // Hitung newCustomers: customer yang order pertamanya di periode ini
+    final allCustomerIds = _allOrders.map((o) => o.customerId).toSet();
+    final newCustomerIds = allCustomerIds.where((cid) {
+      final firstOrder = _allOrders
+          .where((o) => o.customerId == cid)
+          .fold<DateTime?>(null, (earliest, o) {
+        if (earliest == null || o.createdAt.isBefore(earliest)) return o.createdAt;
+        return earliest;
+      });
+      return firstOrder != null &&
+          !firstOrder.isBefore(from) &&
+          !firstOrder.isAfter(to);
+    }).length;
 
     final dailyStats = _computeDailyStats(inRange, from, to);
 
@@ -185,7 +71,7 @@ class MockReportRepository implements ReportRepository {
       revenueGrowth: revenueGrowth,
       totalOrders: totalOrders,
       ordersGrowth: ordersGrowth,
-      newCustomers: 0, // mock — gak ada data registrasi
+      newCustomers: newCustomerIds,
       activeCustomers: activeCustomers,
       averageOrderValue: avgOrderValue,
       dailyStats: dailyStats,
@@ -198,8 +84,7 @@ class MockReportRepository implements ReportRepository {
     required DateTime to,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    final allOrders = [..._orders, ..._previousOrders];
-    final inRange = allOrders
+    final inRange = _allOrders
         .where((o) =>
             !o.createdAt.isBefore(from) && !o.createdAt.isAfter(to))
         .toList();
@@ -234,6 +119,27 @@ class MockReportRepository implements ReportRepository {
     }
 
     return stats;
+  }
+
+  @override
+  Stream<List<OrderModel>> streamAllOrders() {
+    final controller = StreamController<List<OrderModel>>.broadcast();
+
+    final timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!controller.isClosed) {
+        controller.add(List.from(_allOrders));
+      }
+    });
+
+    controller.onCancel = () => timer.cancel();
+
+    Future.microtask(() {
+      if (!controller.isClosed) {
+        controller.add(List.from(_allOrders));
+      }
+    });
+
+    return controller.stream;
   }
 
   String _dateKey(DateTime d) =>

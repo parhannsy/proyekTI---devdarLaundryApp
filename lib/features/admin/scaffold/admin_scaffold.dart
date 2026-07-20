@@ -6,6 +6,7 @@ import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/connection_indicator.dart';
 
 // Breakpoints
 const double _kMobileBreak = 600;
@@ -291,6 +292,10 @@ class _AdminDrawer extends StatelessWidget {
                 ),
               ),
               _buildLogoutTile(context, auth),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: ConnectionIndicator(),
+              ),
             ],
           ),
         ),
@@ -384,13 +389,11 @@ void _confirmLogout(BuildContext context, AuthProvider auth) {
           child: const Text('Batal'),
         ),
         ElevatedButton(
-          onPressed: () {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              context.read<OrderProvider>().stopListening();
-              context.go('/');
-              auth.logout();
-            });
+          onPressed: () async {
+            await auth.logout();
+            if (!context.mounted) return;
+            context.read<OrderProvider>().stopListening();
+            context.go('/');
           },
           style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
           child: const Text('Keluar', style: TextStyle(color: Colors.white)),
@@ -656,6 +659,14 @@ class _AdminSidebar extends StatelessWidget {
                         padding: EdgeInsets.zero,
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ConnectionIndicator(compact: true),
+                    ),
                   ),
                 ],
               ),

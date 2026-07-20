@@ -7,6 +7,7 @@ import 'package:devdar_laundry_pos_app/core/models/user_model.dart';
 import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/theme/claymorphism/clay_container.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/connection_indicator.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -361,6 +362,14 @@ class _LoginPageState extends State<LoginPage>
                 ],
               ),
             ),
+          ),
+
+          const SizedBox(height: 8),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ConnectionIndicator(),
+            ],
           ),
         ],
       ),

@@ -20,14 +20,36 @@ class AdminCustomerPage extends StatefulWidget {
 
 class _AdminCustomerPageState extends State<AdminCustomerPage> {
   String _searchQuery = '';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // Muat data pelanggan dari Firestore saat halaman dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CustomerProvider>().loadAllCustomers();
+      context.read<CustomerProvider>().listenCustomers();
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    context.read<CustomerProvider>().stopListening();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  /// Deteksi scroll mentok 200px dari bawah → trigger load more.
+  void _onScroll() {
+    final provider = context.read<CustomerProvider>();
+    if (!provider.hasMore || provider.isLoadingMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    if (maxScroll - currentScroll <= 200) {
+      provider.loadMoreCustomers();
+    }
   }
 
   List<UserModel> _filtered(CustomerProvider provider) {
@@ -66,7 +88,6 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
     final authProvider = context.read<AuthProvider>();
-    final customerProvider = context.read<CustomerProvider>();
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     showDialog(
@@ -161,8 +182,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                           email: emailCtrl.text.trim(),
                           password: passCtrl.text,
                         );
-                        // Refresh daftar customer setelah tambah akun
-                        await customerProvider.loadAllCustomers();
+                        // Stream otomatis update, tidak perlu manual loadCustomers
                         if (ctx.mounted) {
                           Navigator.pop(ctx);
                           scaffoldMessenger.showSnackBar(
@@ -248,7 +268,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
-                      onPressed: () => provider.loadAllCustomers(),
+                      onPressed: () => provider.loadCustomers(),
                       icon: const Icon(Icons.refresh, size: 18),
                       label: const Text('Coba Lagi'),
                     ),
@@ -258,7 +278,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
             );
           }
 
-          // Loading state
+          // Loading state (initial)
           if (provider.isLoading && provider.customers.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(),
@@ -349,6 +369,7 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                 ),
               ),
               const SizedBox(height: 12),
+              // ── List pelanggan + lazy load footer ──
               Expanded(
                 child: customers.isEmpty
                     ? AdminEmptyState(
@@ -361,23 +382,67 @@ class _AdminCustomerPageState extends State<AdminCustomerPage> {
                             : 'Coba kata kunci yang berbeda',
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: customers.length,
-                        itemBuilder: (_, i) => AnimatedFadeSlider(
-                          index: i + 1,
-                          child: _CustomerCard(
-                            customer: customers[i],
-                            tier: _tierFromPoints(customers[i].loyaltyPoints),
-                            tierColor: _tierColor(_tierFromPoints(customers[i].loyaltyPoints)),
-                            onDetail: () =>
-                                _showCustomerDetail(context, customers[i]),
-                          ),
-                        ),
+                        // +1 untuk loading indicator footer
+                        itemCount: customers.length + (provider.hasMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          // Footer loading indicator
+                          if (i == customers.length) {
+                            return _buildLoadMoreIndicator(provider);
+                          }
+                          return AnimatedFadeSlider(
+                            index: i + 1,
+                            child: _CustomerCard(
+                              customer: customers[i],
+                              tier: _tierFromPoints(customers[i].loyaltyPoints),
+                              tierColor: _tierColor(
+                                  _tierFromPoints(customers[i].loyaltyPoints)),
+                              onDetail: () =>
+                                  _showCustomerDetail(context, customers[i]),
+                            ),
+                          );
+                        },
                       ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreIndicator(CustomerProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: provider.isLoadingMore
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Memuat lebih banyak...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColor.textMuted.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              )
+            : TextButton.icon(
+                onPressed: () => provider.loadMoreCustomers(),
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: const Text('Muat lebih banyak'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColor.primary,
+                ),
+              ),
       ),
     );
   }

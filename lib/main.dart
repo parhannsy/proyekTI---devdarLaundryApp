@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,10 +40,13 @@ void main() async {
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      );
-      await SeedService.seedIfNeeded();
+      ).timeout(const Duration(seconds: 10));
+      await SeedService.seedIfNeeded()
+          .timeout(const Duration(seconds: 10));
       firebaseAvailable = true;
       debugPrint('[Main] ✅ Firebase berhasil diinisialisasi.');
+    } on TimeoutException {
+      debugPrint('[Main] ⏱️ Firebase init timeout — fallback ke Mock Data.');
     } catch (e) {
       debugPrint('[Main] ⚠️ Firebase gagal init — fallback ke Mock Data.');
       debugPrint('[Main] Detail error: $e');

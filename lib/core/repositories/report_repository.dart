@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../models/models.dart';
 
 abstract class ReportRepository {
@@ -12,4 +13,7 @@ abstract class ReportRepository {
     required DateTime from,
     required DateTime to,
   });
+
+  /// Stream realtime semua order (admin), agar laporan selalu up-to-date.
+  Stream<List<OrderModel>> streamAllOrders();
 }
