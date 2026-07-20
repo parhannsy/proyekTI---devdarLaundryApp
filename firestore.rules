@@ -29,13 +29,14 @@ service cloud.firestore {
         && (resource.data.customerId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated()
         && (request.resource.data.customerId == request.auth.uid || isAdmin());
-      // Customer hanya boleh update field 'status' pada order miliknya sendiri
-      // (untuk agree → pickedUp, cancel → cancelled)
+      // Customer hanya boleh update field tertentu pada order miliknya sendiri
+      // (status, discount, voucherCode, totalPrice — untuk agree dan cancel)
       // Admin boleh update apa saja
       allow update: if isAdmin()
         || (isAuthenticated()
             && resource.data.customerId == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'discount', 'voucherCode', 'totalPrice']));
       allow delete: if isAdmin();
     }
 
@@ -56,9 +57,16 @@ service cloud.firestore {
     }
 
     // ── Vouchers ────────────────────────────────────────────
+    // Customer: baca voucher, update usedQuota & claimCount (redeem & claim)
+    // Admin: full akses
     match /vouchers/{voucherId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isAuthenticated()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['usedQuota', 'claimCount']));
     }
+
   }
 }

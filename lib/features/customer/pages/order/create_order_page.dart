@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
-import 'package:devdar_laundry_pos_app/core/providers/voucher_provider.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 
@@ -21,7 +20,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   final _quantityCtrl = TextEditingController();
   final _panjangCtrl = TextEditingController();
   final _lebarCtrl = TextEditingController();
-  final _voucherCodeCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
   OrderCategory _selectedCategory = OrderCategory.pakaian;
@@ -29,10 +27,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   bool _pickupToday = true;
   DateTime _pickupDate = DateTime.now();
   bool _isSubmitting = false;
-
-  // Voucher / Diskon
-  List<VoucherModel> _availableVouchers = [];
-  VoucherModel? _selectedVoucher;
 
   static const _categories = OrderCategory.values;
 
@@ -63,20 +57,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadVouchers();
-    });
-  }
-
-  void _loadVouchers() {
-    final vp = context.read<VoucherProvider>();
-    vp.loadPublicVouchers().then((_) {
-      if (mounted) {
-        setState(() {
-          _availableVouchers = vp.activeVouchers;
-        });
-      }
-    });
   }
 
   @override
@@ -85,7 +65,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _quantityCtrl.dispose();
     _panjangCtrl.dispose();
     _lebarCtrl.dispose();
-    _voucherCodeCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
   }
@@ -167,7 +146,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         status: OrderStatus.request,
         pickupDate: _pickupToday ? DateTime.now() : _pickupDate,
         notes: notes,
-        voucherCode: _selectedVoucher?.code,
+
         createdAt: DateTime.now(),
       );
 
@@ -625,10 +604,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Voucher / Diskon ──────────────────────
-                _buildVoucherSection(),
-                const SizedBox(height: 16),
-
                 // ── Tombol Submit ─────────────────────────
                 SizedBox(
                   width: double.infinity,
@@ -676,457 +651,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     );
   }
 
-  // ── Voucher / Diskon Section ──────────────────────────────
-
-  Widget _buildVoucherSection() {
-    final hasDiscount = _selectedVoucher != null;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: hasDiscount
-              ? AppColor.primary.withValues(alpha: 0.3)
-              : AppColor.divider,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──
-          InkWell(
-            onTap: _availableVouchers.isNotEmpty
-                ? () => _showVoucherPicker()
-                : null,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: hasDiscount
-                          ? AppColor.primary.withValues(alpha: 0.1)
-                          : AppColor.background,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      hasDiscount
-                          ? Icons.local_offer_rounded
-                          : Icons.local_offer_outlined,
-                      size: 18,
-                      color: hasDiscount
-                          ? AppColor.primary
-                          : AppColor.iconSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hasDiscount ? 'Diskon Terpakai' : 'Pakai Diskon / Voucher',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: hasDiscount
-                                ? AppColor.primary
-                                : AppColor.textPrimary,
-                          ),
-                        ),
-                        if (hasDiscount) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '${_selectedVoucher!.valueDisplay} • ${_selectedVoucher!.code}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColor.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ] else if (_availableVouchers.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '${_availableVouchers.length} diskon tersedia — ketuk untuk pilih',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColor.textMuted,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (_availableVouchers.isNotEmpty)
-                    Icon(
-                      hasDiscount
-                          ? Icons.check_circle_rounded
-                          : Icons.chevron_right,
-                      size: 20,
-                      color: hasDiscount
-                          ? AppColor.primary
-                          : AppColor.textMuted,
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Selected voucher info ──
-          if (hasDiscount) ...[
-            const Divider(height: 1, indent: 14, endIndent: 14),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedVoucher!.description,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColor.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedVoucher = null;
-                        _voucherCodeCtrl.clear();
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColor.error.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.close, size: 12, color: AppColor.error),
-                          SizedBox(width: 3),
-                          Text(
-                            'Hapus',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColor.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showVoucherPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _VoucherPickerSheet(
-        vouchers: _availableVouchers,
-        selectedId: _selectedVoucher?.id,
-        onSelect: (v) {
-          Navigator.pop(context);
-          setState(() {
-            _selectedVoucher = v;
-            _voucherCodeCtrl.text = v.code;
-          });
-        },
-      ),
-    );
-  }
-}
-
-// ─── Voucher Picker Bottom Sheet ──────────────────────────────
-
-class _VoucherPickerSheet extends StatelessWidget {
-  final List<VoucherModel> vouchers;
-  final String? selectedId;
-  final ValueChanged<VoucherModel> onSelect;
-
-  const _VoucherPickerSheet({
-    required this.vouchers,
-    required this.selectedId,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Pilih Diskon / Voucher',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: AppColor.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${vouchers.length} diskon tersedia untukmu',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColor.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: vouchers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final v = vouchers[i];
-                final isSelected = v.id == selectedId;
-                return _VoucherPickerItem(
-                  voucher: v,
-                  isSelected: isSelected,
-                  onTap: () => onSelect(v),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Tidak pakai diskon'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VoucherPickerItem extends StatelessWidget {
-  final VoucherModel voucher;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _VoucherPickerItem({
-    required this.voucher,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final (Color badgeColor, IconData badgeIcon) = _badgeForType(voucher.type);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColor.primary.withValues(alpha: 0.06)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? AppColor.primary.withValues(alpha: 0.4)
-                  : AppColor.divider,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Value
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: _buildValue(badgeColor),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            voucher.code,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColor.textPrimary,
-                              letterSpacing: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(badgeIcon,
-                                  size: 10, color: badgeColor),
-                              const SizedBox(width: 3),
-                              Text(
-                                voucher.type.label,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: badgeColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      voucher.title,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColor.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (voucher.minimumOrder != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'Min. Rp ${voucher.minimumOrder!.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColor.warning,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (isSelected)
-                const Icon(Icons.check_circle_rounded,
-                    size: 20, color: AppColor.primary)
-              else
-                const Icon(Icons.add_circle_outline,
-                    size: 20, color: AppColor.textMuted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildValue(Color color) {
-    switch (voucher.type) {
-      case VoucherType.percentage:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              voucher.value.toStringAsFixed(0),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-                height: 1.0,
-              ),
-            ),
-            Text(
-              '%',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: color.withValues(alpha: 0.7),
-                height: 1.0,
-              ),
-            ),
-          ],
-        );
-      case VoucherType.fixed:
-        return Text(
-          'Rp${voucher.value.toStringAsFixed(0)}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        );
-      case VoucherType.freeShipping:
-        return Icon(Icons.local_shipping_outlined, size: 22, color: color);
-    }
-  }
-
-  (Color, IconData) _badgeForType(VoucherType type) {
-    switch (type) {
-      case VoucherType.percentage:
-        return (AppColor.primary, Icons.percent);
-      case VoucherType.fixed:
-        return (AppColor.success, Icons.monetization_on_outlined);
-      case VoucherType.freeShipping:
-        return (const Color(0xFF7B1FA2), Icons.local_shipping_outlined);
-    }
-  }
 }
 
 class _CategoryMeta {

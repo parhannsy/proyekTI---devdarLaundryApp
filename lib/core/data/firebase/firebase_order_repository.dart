@@ -59,22 +59,29 @@ class FirebaseOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderModel> updateOrderStatus(String id, OrderStatus status) async {
+  Future<OrderModel> updateOrderStatus(String id, OrderStatus status, {double discount = 0, String? voucherCode}) async {
     final updates = <String, dynamic>{
       'status': status.name,
     };
 
-    if (status == OrderStatus.completed) {
-      updates['completedAt'] = DateTime.now();
-      // Set totalPrice dari estimatedTotal saat order selesai
+    // Saat customer setuju, simpan diskon + kode voucher + totalPrice
+    if (status == OrderStatus.pickedUp) {
+      if (discount > 0 || voucherCode != null) {
+        updates['discount'] = discount;
+        updates['voucherCode'] = voucherCode;
+      }
+      // Set totalPrice = estimatedTotal agar finalPrice langsung akurat
       final current = await _orders.doc(id).get();
       if (current.exists) {
         final data = current.data() as Map<String, dynamic>;
-        final currentTotal = (data['totalPrice'] ?? 0).toDouble();
-        if (currentTotal == 0 && data['estimatedTotal'] != null) {
+        if (data['estimatedTotal'] != null) {
           updates['totalPrice'] = (data['estimatedTotal'] as num).toDouble();
         }
       }
+    }
+
+    if (status == OrderStatus.completed) {
+      updates['completedAt'] = DateTime.now();
     }
 
     await _orders.doc(id).update(updates);
@@ -84,11 +91,10 @@ class FirebaseOrderRepository implements OrderRepository {
 
   @override
   Future<OrderModel> acceptOrder(String id,
-      {required double estimatedTotal, double discount = 0}) async {
+      {required double estimatedTotal}) async {
     await _orders.doc(id).update({
       'status': OrderStatus.accepted.name,
       'estimatedTotal': estimatedTotal,
-      'discount': discount,
     });
     final doc = await _orders.doc(id).get();
     return _orderFromDoc(doc);

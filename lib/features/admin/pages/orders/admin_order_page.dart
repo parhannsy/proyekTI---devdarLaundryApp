@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
-import 'package:devdar_laundry_pos_app/core/providers/voucher_provider.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/order_detail_sheet.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_empty_state.dart';
 
@@ -45,8 +45,7 @@ class _AdminOrderPageState extends State<AdminOrderPage>
       provider.addListener(_onOrdersChanged);
       _syncOrders(provider);
       provider.listenAllOrders();
-      // Muat data voucher agar diskon bisa dikalkulasi saat menerima order
-      context.read<VoucherProvider>().loadAllVouchers();
+
     });
   }
 
@@ -137,156 +136,71 @@ class _AdminOrderPageState extends State<AdminOrderPage>
 
   // ── Dialogs ───────────────────────────────────────────────
 
-  /// Cari voucher berdasarkan kode, return null jika tidak ditemukan.
-  VoucherModel? _findVoucher(String? code) {
-    if (code == null || code.isEmpty) return null;
-    try {
-      final vp = context.read<VoucherProvider>();
-      return vp.vouchers.firstWhere((v) => v.code == code);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Hitung nilai diskon dari voucher berdasarkan estimasi total.
-  double _calculateDiscount(double estimatedTotal, VoucherModel? voucher) {
-    if (voucher == null || estimatedTotal <= 0) return 0;
-    switch (voucher.type) {
-      case VoucherType.percentage:
-        return estimatedTotal * (voucher.value / 100);
-      case VoucherType.fixed:
-        return voucher.value;
-      case VoucherType.freeShipping:
-        return voucher.value;
-    }
-  }
-
   void _showAcceptDialog(OrderModel order) {
     final provider = context.read<OrderProvider>();
     final totalCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // Cari voucher yang dipakai customer
-    final voucher = _findVoucher(order.voucherCode);
-
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          // Hitung live discount saat admin mengetik nominal
-          final entered = double.tryParse(totalCtrl.text) ?? 0;
-          final discAmount = _calculateDiscount(entered, voucher);
-          final finalPrice = entered - discAmount;
-
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Terima Permohonan'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${order.customerName} — ${order.category.label}',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColor.textSecondary)),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: totalCtrl,
-                    onChanged: (_) => setDialogState(() {}),
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Estimasi Biaya (Rp)',
-                      prefixText: 'Rp ',
-                      prefixStyle: const TextStyle(
-                          color: AppColor.textPrimary,
-                          fontWeight: FontWeight.w600),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Masukkan estimasi biaya';
-                      final n = int.tryParse(v);
-                      if (n == null || n <= 0) return 'Biaya harus > 0';
-                      return null;
-                    },
-                  ),
-
-                  // ── Voucher & Diskon Breakdown ──
-                  if (voucher != null && entered > 0) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColor.primary.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColor.primary.withValues(alpha: 0.15),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.local_offer_rounded,
-                                  size: 14, color: AppColor.primary),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Voucher: ${voucher.code}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColor.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          _priceRow('Subtotal', entered),
-                          _priceRow('Diskon (${voucher.valueDisplay})',
-                              -discAmount,
-                              color: AppColor.error),
-                          const Divider(height: 16),
-                          _priceRow('Total Setelah Diskon', finalPrice,
-                              bold: true, color: AppColor.success),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (!formKey.currentState!.validate()) return;
-                  final total = double.parse(totalCtrl.text);
-                  final disc = _calculateDiscount(total, voucher);
-                  provider.acceptRequest(
-                    order.id,
-                    estimatedTotal: total,
-                    discount: disc,
-                  );
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ ${order.id} diterima'),
-                      backgroundColor: AppColor.success,
-                    ),
-                  );
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Terima Permohonan'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${order.customerName} — ${order.category.label}',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColor.textSecondary)),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: totalCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Estimasi Biaya (Rp)',
+                  prefixText: 'Rp ',
+                  prefixStyle: const TextStyle(
+                      color: AppColor.textPrimary,
+                      fontWeight: FontWeight.w600),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Masukkan estimasi biaya';
+                  final n = int.tryParse(v);
+                  if (n == null || n <= 0) return 'Biaya harus > 0';
+                  return null;
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColor.success),
-                child: const Text('Terima',
-                    style: TextStyle(color: Colors.white)),
               ),
             ],
-          );
-        },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              final total = double.parse(totalCtrl.text);
+              provider.acceptRequest(order.id, estimatedTotal: total);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ ${order.id} diterima'),
+                  backgroundColor: AppColor.success,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColor.success),
+            child: const Text('Terima',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -693,11 +607,13 @@ class _AdminOrderCard extends StatelessWidget {
                       if (order.estimatedTotal != null)
                         _infoChip(
                           Icons.payments_outlined,
-                          NumberFormat.currency(
-                            locale: 'id',
-                            symbol: 'Rp ',
-                            decimalDigits: 0,
-                          ).format(order.estimatedTotal),
+                          order.discount > 0
+                              ? '${formatRupiah(order.finalPrice)} (diskon -${formatRupiah(order.discount)})'
+                              : NumberFormat.currency(
+                                  locale: 'id',
+                                  symbol: 'Rp ',
+                                  decimalDigits: 0,
+                                ).format(order.estimatedTotal),
                         ),
                     ],
                   ),
@@ -830,39 +746,6 @@ class _AdminOrderCard extends StatelessWidget {
 }
 
 // ─── Top-level helpers ────────────────────────────────────────
-
-/// Baris harga di breakdown diskon
-Widget _priceRow(String label, double amount, {
-  bool bold = false,
-  Color? color,
-}) {
-  final fmt = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: bold ? 13 : 12,
-              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-              color: color ?? AppColor.textSecondary,
-            ),
-          ),
-        ),
-        Text(
-          '${amount >= 0 ? '' : '-'}${fmt.format(amount.abs())}',
-          style: TextStyle(
-            fontSize: bold ? 13 : 12,
-            fontWeight: bold ? FontWeight.bold : FontWeight.w500,
-            color: color ?? AppColor.textPrimary,
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
 OrderStatus? orderNextStatus(OrderStatus current) {
   switch (current) {

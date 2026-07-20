@@ -80,6 +80,52 @@ class VoucherProvider extends ChangeNotifier {
     }
   }
 
+  /// Menandai voucher sebagai digunakan oleh customer (increment usedQuota).
+  Future<bool> redeemVoucher(String voucherId, String customerId) async {
+    try {
+      await _repository.redeemVoucher(voucherId, customerId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Mencatat klaim voucher oleh customer di collection terpisah.
+  Future<bool> claimVoucher(String voucherId, String customerId) async {
+    try {
+      await _repository.claimVoucher(voucherId, customerId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Increment claimCount pada voucher.
+  Future<bool> incrementClaimCount(String voucherId) async {
+    try {
+      await _repository.incrementClaimCount(voucherId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Mengambil daftar ID voucher yang sudah diklaim oleh customer.
+  Future<List<String>> getClaimedVoucherIds(String customerId) async {
+    try {
+      return await _repository.getClaimedVoucherIds(customerId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      return [];
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

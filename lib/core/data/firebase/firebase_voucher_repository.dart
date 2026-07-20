@@ -51,7 +51,24 @@ class FirebaseVoucherRepository implements VoucherRepository {
 
   @override
   Future<void> deleteVoucher(String id) async {
-    await _vouchers.doc(id).delete();
+    // Cari semua user yang memiliki voucher ini di claimedVouchers
+    final snapshot = await _firestore
+        .collection('users')
+        .where('claimedVouchers', arrayContains: id)
+        .get();
+
+    // Hapus voucherId dari array claimedVouchers setiap user
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.update(doc.reference, {
+        'claimedVouchers': FieldValue.arrayRemove([id]),
+      });
+    }
+    // Hapus dokumen voucher
+    batch.delete(_vouchers.doc(id));
+
+    // Eksekusi semua operasi dalam satu batch
+    await batch.commit();
   }
 
   @override
@@ -74,6 +91,41 @@ class FirebaseVoucherRepository implements VoucherRepository {
     });
   }
 
+  @override
+  Future<void> incrementClaimCount(String voucherId) async {
+    await _vouchers.doc(voucherId).update({
+      'claimCount': FieldValue.increment(1),
+    });
+  }
+
+  @override
+  Future<void> claimVoucher(String voucherId, String customerId) async {
+    // Simpan di array claimedVouchers pada dokumen user
+    // (akses diatur oleh rules users/{userId} yang sudah ada)
+    await _firestore.collection('users').doc(customerId).update({
+      'claimedVouchers': FieldValue.arrayUnion([voucherId]),
+    });
+  }
+
+  @override
+  Future<List<String>> getClaimantsByVoucher(String voucherId) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .where('claimedVouchers', arrayContains: voucherId)
+        .get();
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  @override
+  Future<List<String>> getClaimedVoucherIds(String customerId) async {
+    final doc = await _firestore.collection('users').doc(customerId).get();
+    if (!doc.exists) return [];
+    final data = doc.data() as Map<String, dynamic>;
+    final list = data['claimedVouchers'];
+    if (list is List) return list.cast<String>();
+    return [];
+  }
+
   VoucherModel _voucherFromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return VoucherModel(
@@ -86,6 +138,8 @@ class FirebaseVoucherRepository implements VoucherRepository {
       minimumOrder: (data['minimumOrder'] as num?)?.toDouble(),
       totalQuota: data['totalQuota'] ?? 0,
       usedQuota: data['usedQuota'] ?? 0,
+      claimCount: data['claimCount'] ?? 0,
+      claimLimit: (data['claimLimit'] as int?),
       validFrom: (data['validFrom'] as Timestamp).toDate(),
       validUntil: (data['validUntil'] as Timestamp).toDate(),
       status: _parseVoucherStatus(data['status']),
@@ -103,6 +157,8 @@ class FirebaseVoucherRepository implements VoucherRepository {
       'minimumOrder': voucher.minimumOrder,
       'totalQuota': voucher.totalQuota,
       'usedQuota': voucher.usedQuota,
+      'claimCount': voucher.claimCount,
+      'claimLimit': voucher.claimLimit,
       'validFrom': voucher.validFrom,
       'validUntil': voucher.validUntil,
       'status': voucher.status.name,

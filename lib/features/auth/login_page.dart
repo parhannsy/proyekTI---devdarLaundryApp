@@ -31,8 +31,8 @@ class _LoginPageState extends State<LoginPage>
   static const _hints = [
     _CredentialHint(
       label: 'Customer Demo',
-      email: 'frhnsydida08@gmail.com',
-      password: 'Kuningan123',
+      email: 'g@fm.com',
+      password: '12345678',
       icon: Icons.person_outline,
       color: AppColor.primary,
     ),

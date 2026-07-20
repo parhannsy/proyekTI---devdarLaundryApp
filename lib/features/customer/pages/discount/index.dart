@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/voucher_provider.dart';
+import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
 import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_bar.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'widgets/discount_card.dart';
@@ -19,7 +21,7 @@ class _DiscountPageState extends State<DiscountPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<VoucherModel> _vouchers = [];
-  final List<VoucherModel> _claimedVouchers = [];
+  Set<String> _claimedVoucherIds = {};
   bool _isLoading = true;
 
   @override
@@ -39,10 +41,23 @@ class _DiscountPageState extends State<DiscountPage>
   Future<void> _loadVouchers() async {
     setState(() => _isLoading = true);
     try {
-      await context.read<VoucherProvider>().loadPublicVouchers();
+      final vp = context.read<VoucherProvider>();
+      final auth = context.read<AuthProvider>();
+      final userId = auth.currentUser?.id;
+
+      // Load vouchers
+      await vp.loadPublicVouchers();
+
+      // Load claimed IDs (jika user sudah login)
+      List<String> claimedIds = [];
+      if (userId != null) {
+        claimedIds = await vp.getClaimedVoucherIds(userId);
+      }
+
       if (!mounted) return;
       setState(() {
         _vouchers = context.read<VoucherProvider>().activeVouchers;
+        _claimedVoucherIds = claimedIds.toSet();
         _isLoading = false;
       });
     } catch (_) {
@@ -50,29 +65,65 @@ class _DiscountPageState extends State<DiscountPage>
     }
   }
 
-  void _claimVoucher(VoucherModel voucher) {
-    // Simulasi klaim: tambahkan ke daftar "claimed" local
-    setState(() {
-      if (!_claimedVouchers.any((v) => v.id == voucher.id)) {
-        _claimedVouchers.add(voucher);
-      }
-    });
+  Future<void> _claimVoucher(VoucherModel voucher) async {
+    final auth = context.read<AuthProvider>();
+    final userId = auth.currentUser?.id;
+    if (userId == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('🎉 Voucher "${voucher.code}" berhasil diklaim!'),
-        backgroundColor: AppColor.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      ),
-    );
+    // Cek batas klaim (siapa cepat dia dapat)
+    if (voucher.isClaimFull) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Maaf, kuota klaim voucher ini sudah penuh'),
+            backgroundColor: AppColor.warning,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          ),
+        );
+      }
+      return;
+    }
+
+    final vp = context.read<VoucherProvider>();
+    // Simpan claim record dulu baru increment claimCount
+    final success = await vp.claimVoucher(voucher.id, userId);
+    if (!success) return;
+
+    await vp.incrementClaimCount(voucher.id);
+
+    if (mounted) {
+      setState(() {
+        // Update claimCount di data lokal agar isClaimFull langsung berefek
+        _claimedVoucherIds.add(voucher.id);
+        final idx = _vouchers.indexWhere((v) => v.id == voucher.id);
+        if (idx != -1) {
+          _vouchers[idx] = _vouchers[idx].copyWith(
+            claimCount: _vouchers[idx].claimCount + 1,
+          );
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Voucher "${voucher.code}" berhasil diklaim!'),
+          backgroundColor: AppColor.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final available =
-        _vouchers.where((v) => !_claimedVouchers.any((c) => c.id == v.id)).toList();
+    // Filter: tersedia = belum diklaim + belum penuh claim limit-nya
+    final claimed = _vouchers.where((v) => _claimedVoucherIds.contains(v.id)).toList();
+    final available = _vouchers.where((v) =>
+      !_claimedVoucherIds.contains(v.id) &&
+      (v.claimLimit == null || v.claimCount < v.claimLimit!)
+    ).toList();
 
     return Scaffold(
       backgroundColor: AppColor.background,
@@ -142,7 +193,7 @@ class _DiscountPageState extends State<DiscountPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '${_claimedVouchers.length}',
+                          '${claimed.length}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -194,7 +245,7 @@ class _DiscountPageState extends State<DiscountPage>
                 dividerColor: Colors.transparent,
                 tabs: [
                   Tab(text: 'Tersedia (${available.length})'),
-                  Tab(text: 'Dimiliki (${_claimedVouchers.length})'),
+                  Tab(text: 'Dimiliki (${claimed.length})'),
                 ],
               ),
             ),
@@ -215,7 +266,7 @@ class _DiscountPageState extends State<DiscountPage>
                         isClaimedList: false,
                       ),
                       _buildTabContent(
-                        vouchers: _claimedVouchers,
+                        vouchers: claimed,
                         emptyIcon: Icons.card_giftcard_outlined,
                         emptyMsg: 'Belum ada diskon diklaim',
                         emptySub: 'Klaim diskon dari tab Tersedia',
@@ -289,6 +340,7 @@ class _DiscountPageState extends State<DiscountPage>
   void _showVoucherDetail(VoucherModel voucher) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -396,7 +448,7 @@ class _VoucherDetailSheet extends StatelessWidget {
               voucher.valueDisplay),
           if (voucher.minimumOrder != null)
             _infoRow(Icons.shopping_cart_outlined, 'Min. Belanja',
-                'Rp ${voucher.minimumOrder!.toStringAsFixed(0)}'),
+                '${formatRupiah(voucher.minimumOrder!)}'),
           _infoRow(Icons.people_outline, 'Kuota',
               '${voucher.usedQuota}/${voucher.totalQuota} digunakan'),
           _infoRow(Icons.calendar_today_outlined, 'Berlaku s/d',

@@ -90,6 +90,9 @@ class MockVoucherRepository implements VoucherRepository {
   @override
   Future<void> deleteVoucher(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    // Hapus semua claim records untuk voucher ini
+    _claimedRecords.removeWhere((r) => r.voucherId == id);
+    // Hapus dokumen voucher
     _vouchers.removeWhere((v) => v.id == id);
   }
 
@@ -115,4 +118,57 @@ class MockVoucherRepository implements VoucherRepository {
       );
     }
   }
+
+  // ── Claimed vouchers (in-memory store) ─────────────────────
+  final List<_ClaimRecord> _claimedRecords = [];
+
+  @override
+  Future<void> incrementClaimCount(String voucherId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final index = _vouchers.indexWhere((v) => v.id == voucherId);
+    if (index != -1) {
+      _vouchers[index] = _vouchers[index].copyWith(
+        claimCount: _vouchers[index].claimCount + 1,
+      );
+    }
+  }
+
+  @override
+  Future<void> claimVoucher(String voucherId, String customerId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _claimedRecords.add(_ClaimRecord(
+      id: '${customerId}_$voucherId',
+      customerId: customerId,
+      voucherId: voucherId,
+    ));
+  }
+
+  @override
+  Future<List<String>> getClaimantsByVoucher(String voucherId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return _claimedRecords
+        .where((r) => r.voucherId == voucherId)
+        .map((r) => r.customerId)
+        .toList();
+  }
+
+  @override
+  Future<List<String>> getClaimedVoucherIds(String customerId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return _claimedRecords
+        .where((r) => r.customerId == customerId)
+        .map((r) => r.voucherId)
+        .toList();
+  }
+}
+
+class _ClaimRecord {
+  final String id;
+  final String customerId;
+  final String voucherId;
+  const _ClaimRecord({
+    required this.id,
+    required this.customerId,
+    required this.voucherId,
+  });
 }

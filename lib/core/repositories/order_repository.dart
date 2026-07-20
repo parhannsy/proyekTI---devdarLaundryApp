@@ -17,11 +17,11 @@ abstract class OrderRepository {
   Future<OrderModel> createOrder(OrderModel order);
 
   /// Memperbarui status order.
-  Future<OrderModel> updateOrderStatus(String id, OrderStatus status);
+  /// [discount] dan [voucherCode] diisi saat customer setuju & pilih voucher.
+  Future<OrderModel> updateOrderStatus(String id, OrderStatus status, {double discount = 0, String? voucherCode});
 
   /// Admin menerima permohonan order + memberikan estimasi biaya.
-  /// [discount] adalah nilai potongan dari voucher (jika ada).
-  Future<OrderModel> acceptOrder(String id, {required double estimatedTotal, double discount = 0});
+  Future<OrderModel> acceptOrder(String id, {required double estimatedTotal});
 
   /// Admin menolak permohonan order dengan alasan.
   Future<OrderModel> rejectOrder(String id, {required String reason});

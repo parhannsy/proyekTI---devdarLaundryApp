@@ -45,13 +45,18 @@ class MockOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<OrderModel> updateOrderStatus(String id, OrderStatus status) async {
+  Future<OrderModel> updateOrderStatus(String id, OrderStatus status, {double discount = 0, String? voucherCode}) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final index = _orders.indexWhere((o) => o.id == id);
     if (index == -1) throw Exception('Order tidak ditemukan.');
 
     final current = _orders[index];
     double totalPrice = current.totalPrice;
+
+    // Saat customer setuju, simpan diskon + set totalPrice
+    if (status == OrderStatus.pickedUp) {
+      totalPrice = current.estimatedTotal ?? totalPrice;
+    }
     if (status == OrderStatus.completed && totalPrice == 0 && current.estimatedTotal != null) {
       totalPrice = current.estimatedTotal!;
     }
@@ -59,6 +64,8 @@ class MockOrderRepository implements OrderRepository {
     final updated = current.copyWith(
       status: status,
       totalPrice: totalPrice,
+      discount: status == OrderStatus.pickedUp ? discount : current.discount,
+      voucherCode: status == OrderStatus.pickedUp ? voucherCode : current.voucherCode,
       completedAt: status == OrderStatus.completed ? DateTime.now() : null,
     );
     _orders[index] = updated;
@@ -67,7 +74,7 @@ class MockOrderRepository implements OrderRepository {
 
   @override
   Future<OrderModel> acceptOrder(String id,
-      {required double estimatedTotal, double discount = 0}) async {
+      {required double estimatedTotal}) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final index = _orders.indexWhere((o) => o.id == id);
     if (index == -1) throw Exception('Order tidak ditemukan.');
@@ -77,7 +84,6 @@ class MockOrderRepository implements OrderRepository {
     final updated = _orders[index].copyWith(
       status: OrderStatus.accepted,
       estimatedTotal: estimatedTotal,
-      discount: discount,
     );
     _orders[index] = updated;
     return updated;

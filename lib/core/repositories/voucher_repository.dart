@@ -19,6 +19,18 @@ abstract class VoucherRepository {
   /// Memvalidasi kode voucher dan mengembalikan voucher jika valid.
   Future<VoucherModel?> validateCode(String code);
 
-  /// Menandai voucher sebagai digunakan oleh customer.
+  /// Menandai voucher sebagai digunakan oleh customer (increment quota).
   Future<void> redeemVoucher(String voucherId, String customerId);
+
+  /// Mencatat klaim voucher oleh customer di collection terpisah.
+  Future<void> claimVoucher(String voucherId, String customerId);
+
+  /// Mengambil daftar ID voucher yang sudah diklaim oleh customer.
+  Future<List<String>> getClaimedVoucherIds(String customerId);
+
+  /// Mengambil daftar ID customer yang sudah mengklaim voucher tertentu.
+  Future<List<String>> getClaimantsByVoucher(String voucherId);
+
+  /// Increment claimCount pada voucher (batas siapa cepat dia dapat).
+  Future<void> incrementClaimCount(String voucherId);
 }

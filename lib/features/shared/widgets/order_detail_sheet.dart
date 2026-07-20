@@ -291,19 +291,18 @@ class _OrderDetailSheetContent extends StatelessWidget {
                 currencyFormat.format(order.estimatedTotal!)),
           // ── Diskon (jika ada) ──
           if (order.discount > 0) ...[
-            _detailRow(Icons.local_offer_rounded, 'Potongan Diskon',
-                '-${currencyFormat.format(order.discount)}'),
-            if (order.voucherCode != null)
-              _detailRow(Icons.confirmation_number_outlined,
-                  'Kode Voucher', order.voucherCode!),
-          ],
-
-          // ── Harga Final ──
-          if (order.totalPrice > 0)
+            _priceRow(
+              originalPrice: currencyFormat.format(order.totalPrice),
+              discountAmount: order.discount,
+              finalPrice: order.finalPrice,
+              voucherCode: order.voucherCode,
+            ),
+          ] else if (order.totalPrice > 0) ...[
             _detailRow(
                 Icons.payments_outlined,
                 'Total Dibayar',
                 currencyFormat.format(order.finalPrice)),
+          ],
           if (order.notes != null && order.notes!.isNotEmpty)
             _detailRow(Icons.notes_outlined, 'Catatan', order.notes!),
 
@@ -324,6 +323,113 @@ class _OrderDetailSheetContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Row khusus untuk menampilkan harga dengan coretan merah + harga baru hijau.
+  Widget _priceRow({
+    required String originalPrice,
+    required double discountAmount,
+    required double finalPrice,
+    String? voucherCode,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColor.error.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColor.error.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Harga asli (merah, dicoret)
+            Row(
+              children: [
+                Icon(Icons.receipt_long_outlined,
+                    size: 16, color: AppColor.textSecondary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Estimasi Biaya',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColor.textSecondary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  originalPrice,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor.error,
+                    decoration: TextDecoration.lineThrough,
+                    decorationColor: AppColor.error,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Diskon
+            Row(
+              children: [
+                Icon(Icons.local_offer_rounded,
+                    size: 14, color: AppColor.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    voucherCode != null
+                        ? 'Diskon $voucherCode'
+                        : 'Potongan Diskon',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColor.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Text(
+                  '-${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(discountAmount)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.error,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 12),
+            // Harga final (hijau, bold)
+            Row(
+              children: [
+                Icon(Icons.payments_outlined,
+                    size: 16, color: AppColor.success),
+                const SizedBox(width: 8),
+                const Text(
+                  'Total Dibayar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(finalPrice),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.success,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

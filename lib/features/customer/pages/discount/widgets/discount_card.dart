@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 
 /// A card widget displaying a voucher/discount offer.
@@ -193,7 +194,7 @@ class DiscountCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Min. Rp ${voucher.minimumOrder!.toStringAsFixed(0)}',
+                          'Min. ${formatRupiah(voucher.minimumOrder!)}',
                           style: const TextStyle(
                             fontSize: 10,
                             color: AppColor.warning,
@@ -333,7 +334,7 @@ class DiscountCard extends StatelessWidget {
         );
       case VoucherType.fixed:
         return Text(
-          'Rp${voucher.value.toStringAsFixed(0)}',
+          formatRupiah(voucher.value).replaceFirst('Rp ', 'Rp'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

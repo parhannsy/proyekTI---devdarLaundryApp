@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/voucher_provider.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
@@ -452,8 +453,7 @@ class _VoucherCard extends StatelessWidget {
                     ),
                     if (voucher.minimumOrder != null) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        'Min. Rp ${voucher.minimumOrder!.toStringAsFixed(0)}',
+                      Text(                          'Min. ${formatRupiah(voucher.minimumOrder!)}',
                         style: const TextStyle(
                           fontSize: 10,
                           color: AppColor.warning,
@@ -587,6 +587,7 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
   late TextEditingController _valueCtrl;
   late TextEditingController _minOrderCtrl;
   late TextEditingController _quotaCtrl;
+  late TextEditingController _claimLimitCtrl;
   final _formKey = GlobalKey<FormState>();
 
   VoucherType _type = VoucherType.percentage;
@@ -608,6 +609,8 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
             : '');
     _quotaCtrl = TextEditingController(
         text: v != null ? v.totalQuota.toString() : '');
+    _claimLimitCtrl = TextEditingController(
+        text: v?.claimLimit != null ? v!.claimLimit.toString() : '');
     if (v != null) {
       _type = v.type;
       _isPublic = v.isPublic;
@@ -622,6 +625,7 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
     _valueCtrl.dispose();
     _minOrderCtrl.dispose();
     _quotaCtrl.dispose();
+    _claimLimitCtrl.dispose();
     super.dispose();
   }
 
@@ -640,6 +644,10 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
           : double.tryParse(_minOrderCtrl.text),
       totalQuota: int.tryParse(_quotaCtrl.text) ?? 0,
       usedQuota: widget.voucher?.usedQuota ?? 0,
+      claimCount: widget.voucher?.claimCount ?? 0,
+      claimLimit: _claimLimitCtrl.text.isEmpty
+          ? null
+          : int.tryParse(_claimLimitCtrl.text),
       validFrom: widget.voucher?.validFrom ?? DateTime.now(),
       validUntil: DateTime(
         DateTime.now().year + 1,
@@ -758,7 +766,7 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
               // Kuota
               TextFormField(
                 controller: _quotaCtrl,
-                decoration: _input('Total Kuota', Icons.people_outline),
+                decoration: _input('Total Kuota (pemakaian)', Icons.people_outline),
                 keyboardType: TextInputType.number,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Wajib diisi';
@@ -766,6 +774,21 @@ class _VoucherFormDialogState extends State<_VoucherFormDialog> {
                   if (n == null || n <= 0) return '> 0';
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+
+              // Batas Klaim
+              Text('Batas Klaim (opsional, siapa cepat dia dapat)',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColor.textPrimary)),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _claimLimitCtrl,
+                decoration: _input(
+                    'Kosongkan jika tidak ada batas klaim', Icons.people_alt_outlined),
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 12),
 

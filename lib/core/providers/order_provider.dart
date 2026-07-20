@@ -67,10 +67,9 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Admin menerima permohonan & memberikan estimasi biaya.
-  /// [discount] adalah nilai potongan dari voucher (jika ada).
-  Future<void> acceptRequest(String orderId, {required double estimatedTotal, double discount = 0}) async {
+  Future<void> acceptRequest(String orderId, {required double estimatedTotal}) async {
     try {
-      final updated = await _repository.acceptOrder(orderId, estimatedTotal: estimatedTotal, discount: discount);
+      final updated = await _repository.acceptOrder(orderId, estimatedTotal: estimatedTotal);
       _replaceInList(updated);
     } catch (e) {
       _errorMessage = e.toString();
@@ -135,11 +134,12 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  /// Customer menyetujui estimasi biaya → status berubah ke pickedUp.
+  /// Customer menyetujui estimasi biaya + memilih voucher → status berubah ke pickedUp.
+  /// [discount] dan [voucherCode] dari voucher yang dipilih customer.
   /// Return true jika berhasil, false jika gagal.
-  Future<bool> agreeToOrder(String orderId) async {
+  Future<bool> agreeToOrder(String orderId, {double discount = 0, String? voucherCode}) async {
     try {
-      final updated = await _repository.updateOrderStatus(orderId, OrderStatus.pickedUp);
+      final updated = await _repository.updateOrderStatus(orderId, OrderStatus.pickedUp, discount: discount, voucherCode: voucherCode);
       _replaceInList(updated);
       return true;
     } catch (e) {

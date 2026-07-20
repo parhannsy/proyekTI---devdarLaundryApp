@@ -1,3 +1,5 @@
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
+
 enum VoucherType { percentage, fixed, freeShipping }
 enum VoucherStatus { active, expired, used }
 
@@ -24,6 +26,8 @@ class VoucherModel {
   final double? minimumOrder;
   final int totalQuota;
   final int usedQuota;
+  final int claimCount;
+  final int? claimLimit;
   final DateTime validFrom;
   final DateTime validUntil;
   final VoucherStatus status;
@@ -39,6 +43,8 @@ class VoucherModel {
     this.minimumOrder,
     required this.totalQuota,
     this.usedQuota = 0,
+    this.claimCount = 0,
+    this.claimLimit,
     required this.validFrom,
     required this.validUntil,
     this.status = VoucherStatus.active,
@@ -48,6 +54,7 @@ class VoucherModel {
   int get remainingQuota => totalQuota - usedQuota;
   bool get isExpired => DateTime.now().isAfter(validUntil);
   bool get isFull => usedQuota >= totalQuota;
+  bool get isClaimFull => claimLimit != null && claimCount >= claimLimit!;
   bool get isAvailable => !isExpired && !isFull && status == VoucherStatus.active;
 
   String get valueDisplay {
@@ -55,7 +62,7 @@ class VoucherModel {
       case VoucherType.percentage:
         return '${value.toStringAsFixed(0)}%';
       case VoucherType.fixed:
-        return 'Rp ${value.toStringAsFixed(0)}';
+        return formatRupiah(value);
       case VoucherType.freeShipping:
         return 'Gratis Ongkir';
     }
@@ -71,6 +78,8 @@ class VoucherModel {
     double? minimumOrder,
     int? totalQuota,
     int? usedQuota,
+    int? claimCount,
+    int? claimLimit,
     DateTime? validFrom,
     DateTime? validUntil,
     VoucherStatus? status,
@@ -86,6 +95,8 @@ class VoucherModel {
       minimumOrder: minimumOrder ?? this.minimumOrder,
       totalQuota: totalQuota ?? this.totalQuota,
       usedQuota: usedQuota ?? this.usedQuota,
+      claimCount: claimCount ?? this.claimCount,
+      claimLimit: claimLimit ?? this.claimLimit,
       validFrom: validFrom ?? this.validFrom,
       validUntil: validUntil ?? this.validUntil,
       status: status ?? this.status,
