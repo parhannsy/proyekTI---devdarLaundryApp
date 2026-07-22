@@ -154,6 +154,7 @@ class MockDataStore {
       email: 'customer@devdara.com',
       phone: '081234567890',
       role: UserRole.customer,
+      addresses: [AddressModel(address: 'Jl. Merdeka No. 123, Jakarta', label: 'Rumah', isDefault: true)],
       loyaltyPoints: 320,
       totalSavings: 125000,
       createdAt: DateTime(2024, 1, 15),

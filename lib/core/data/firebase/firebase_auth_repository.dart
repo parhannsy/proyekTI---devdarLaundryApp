@@ -76,7 +76,7 @@ class FirebaseAuthRepository implements AuthRepository {
       'nickname': '',
       'email': email,
       'phone': '',
-      'address': '',
+      'addresses': [],
       'role': 'customer',
       'loyaltyPoints': 0,
       'totalSavings': 0,
@@ -94,7 +94,7 @@ class FirebaseAuthRepository implements AuthRepository {
       nickname: '',
       email: email,
       phone: '',
-      address: '',
+      addresses: [],
       role: UserRole.customer,
       createdAt: DateTime.now(),
       isProfileComplete: false,
@@ -121,7 +121,7 @@ class FirebaseAuthRepository implements AuthRepository {
       'name': name,
       'nickname': nickname,
       'phone': phone,
-      'address': address,
+      'addresses': [{'address': address, 'label': 'Utama', 'isDefault': true}],
       'isProfileComplete': true,
     });
 
@@ -148,7 +148,7 @@ class FirebaseAuthRepository implements AuthRepository {
       'nickname': isDemo ? email.split('@').first : '',
       'email': email,
       'phone': phone,
-      'address': '',
+      'addresses': [],
       'role': role,
       'loyaltyPoints': loyaltyPoints,
       'totalSavings': totalSavings,
@@ -168,12 +168,17 @@ class FirebaseAuthRepository implements AuthRepository {
     String? nickname,
     String? phone,
     String? address,
+    List<AddressModel>? addresses,
   }) async {
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
     if (nickname != null) updates['nickname'] = nickname;
     if (phone != null) updates['phone'] = phone;
-    if (address != null) updates['address'] = address;
+    if (addresses != null) {
+      updates['addresses'] = addresses.map((a) => a.toJson()).toList();
+    } else if (address != null) {
+      updates['addresses'] = [{'address': address, 'label': 'Utama', 'isDefault': true}];
+    }
 
     if (updates.isNotEmpty) {
       await _firestore.collection('users').doc(uid).update(updates);
@@ -222,6 +227,19 @@ class FirebaseAuthRepository implements AuthRepository {
     return _userFromDoc(user.uid, doc.data()!);
   }
 
+  /// Parse addresses dari Firestore, dengan fallback ke field 'address' lama.
+  List<AddressModel> _parseAddresses(Map<String, dynamic> data) {
+    final list = (data['addresses'] as List<dynamic>?)
+        ?.map((a) => AddressModel.fromJson(a as Map<String, dynamic>))
+        .toList();
+    if (list != null && list.isNotEmpty) return list;
+    // Backward compat: field 'address' String lama
+    if (data['address'] != null && (data['address'] as String).isNotEmpty) {
+      return [AddressModel(address: data['address'], label: 'Utama', isDefault: true)];
+    }
+    return [];
+  }
+
   UserModel _userFromDoc(String uid, Map<String, dynamic> data) {
     return UserModel(
       id: uid,
@@ -229,7 +247,7 @@ class FirebaseAuthRepository implements AuthRepository {
       nickname: data['nickname'],
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
-      address: data['address'],
+      addresses: _parseAddresses(data),
       role: data['role'] == 'admin' ? UserRole.admin : UserRole.customer,
       loyaltyPoints: data['loyaltyPoints'] ?? 0,
       totalSavings: (data['totalSavings'] ?? 0).toDouble(),

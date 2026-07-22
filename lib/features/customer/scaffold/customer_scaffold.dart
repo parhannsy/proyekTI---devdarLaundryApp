@@ -48,6 +48,12 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
     context.go(_routes[targetIndex]);
   }
 
+  bool get _hideNavBar {
+    final location = GoRouterState.of(context).matchedLocation;
+    // Sembunyikan navbar untuk halaman fullscreen (create, edit, detail)
+    return location.contains('/create');
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentIndex = _currentIndex();
@@ -89,23 +95,25 @@ class _CustomerScaffoldState extends State<CustomerScaffold> {
       extendBody: true,
       backgroundColor: AppColor.background,
       body: body,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 2),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ConnectionIndicator(compact: true),
-            ],
-          ),
-          _MinimalBottomBar(
-            currentIndex: currentIndex,
-            onTap: _onNavigate,
-            items: _navItems,
-          ),
-        ],
-      ),
+      bottomNavigationBar: _hideNavBar
+          ? null
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 2),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ConnectionIndicator(compact: true),
+                  ],
+                ),
+                _MinimalBottomBar(
+                  currentIndex: currentIndex,
+                  onTap: _onNavigate,
+                  items: _navItems,
+                ),
+              ],
+            ),
     );
   }
 }

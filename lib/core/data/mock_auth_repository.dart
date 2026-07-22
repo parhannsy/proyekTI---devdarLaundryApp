@@ -12,7 +12,7 @@ class MockAuthRepository implements AuthRepository {
       nickname: 'Ahmad',
       email: 'customer@devdara.com',
       phone: '081234567890',
-      address: 'Jl. Merdeka No. 123, Jakarta',
+      addresses: [AddressModel(address: 'Jl. Merdeka No. 123, Jakarta', label: 'Rumah', isDefault: true)],
       role: UserRole.customer,
       loyaltyPoints: 320,
       totalSavings: 125000,
@@ -26,7 +26,7 @@ class MockAuthRepository implements AuthRepository {
       nickname: 'Admin',
       email: 'admin@devdara.com',
       phone: '089876543210',
-      address: 'Jl. Sudirman No. 45, Jakarta',
+      addresses: [AddressModel(address: 'Jl. Sudirman No. 45, Jakarta', label: 'Kantor', isDefault: true)],
       role: UserRole.admin,
       hasSeenSplash: true,
       isProfileComplete: true,
@@ -87,7 +87,7 @@ class MockAuthRepository implements AuthRepository {
       nickname: '',
       email: email,
       phone: '',
-      address: '',
+      addresses: [],
       role: UserRole.customer,
       createdAt: DateTime.now(),
       isProfileComplete: false,
@@ -117,7 +117,7 @@ class MockAuthRepository implements AuthRepository {
           name: name,
           nickname: nickname,
           phone: phone,
-          address: address,
+          addresses: [AddressModel(address: address, label: 'Utama', isDefault: true)],
           isProfileComplete: true,
         );
         _users[entry.key] = updated;
@@ -133,7 +133,7 @@ class MockAuthRepository implements AuthRepository {
         name: name,
         nickname: nickname,
         phone: phone,
-        address: address,
+        addresses: [AddressModel(address: address, label: 'Utama', isDefault: true)],
         isProfileComplete: true,
       );
       _registeredUsers[index] = updated;
@@ -168,6 +168,7 @@ class MockAuthRepository implements AuthRepository {
     String? nickname,
     String? phone,
     String? address,
+    List<AddressModel>? addresses,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -178,7 +179,13 @@ class MockAuthRepository implements AuthRepository {
         if (name != null) updated = updated.copyWith(name: name);
         if (nickname != null) updated = updated.copyWith(nickname: nickname);
         if (phone != null) updated = updated.copyWith(phone: phone);
-        if (address != null) updated = updated.copyWith(address: address);
+        if (addresses != null) {
+          updated = updated.copyWith(addresses: addresses);
+        } else if (address != null) {
+          updated = updated.copyWith(
+            addresses: [AddressModel(address: address, label: 'Utama', isDefault: true)],
+          );
+        }
         _users[entry.key] = updated;
         _currentUser = updated;
         return updated;
@@ -192,7 +199,13 @@ class MockAuthRepository implements AuthRepository {
       if (name != null) updated = updated.copyWith(name: name);
       if (nickname != null) updated = updated.copyWith(nickname: nickname);
       if (phone != null) updated = updated.copyWith(phone: phone);
-      if (address != null) updated = updated.copyWith(address: address);
+      if (addresses != null) {
+        updated = updated.copyWith(addresses: addresses);
+      } else if (address != null) {
+        updated = updated.copyWith(
+          addresses: [AddressModel(address: address, label: 'Utama', isDefault: true)],
+        );
+      }
       _registeredUsers[idx] = updated;
       _currentUser = updated;
       return updated;

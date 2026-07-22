@@ -13,6 +13,7 @@ import '../../features/customer/pages/order/index.dart';
 import '../../features/customer/pages/order/create_order_page.dart';
 import '../../features/customer/pages/mission/index.dart';
 import '../../features/customer/pages/profil/index.dart';
+import '../../features/customer/pages/profil/edit_profile_page.dart';
 import '../../features/customer/pages/discount/index.dart';
 import '../../features/admin/scaffold/admin_scaffold.dart';
 import '../../features/admin/pages/dashboard/admin_dashboard_page.dart';
@@ -132,6 +133,11 @@ class AppRouter {
               path: AppRoutes.customerProfile,
               name: 'customerProfile',
               builder: (_, __) => const ProfilePage(),
+            ),
+            GoRoute(
+              path: '${AppRoutes.customerProfile}/edit',
+              name: 'customerProfileEdit',
+              builder: (_, __) => const EditProfilePage(),
             ),
             GoRoute(
               path: AppRoutes.customerDiscount,

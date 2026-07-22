@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/date_formatter.dart';
 
 /// Status tahapan utama yang ditampilkan di tracking timeline.
 /// 5 tahap: Permohonan → Diterima → Diproses → Diantar → Selesai
@@ -96,11 +98,6 @@ class _OrderDetailSheetContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('d MMM yyyy', 'id');
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
 
     final currentStage = _trackStageFromStatus(order.status);
     final allStages = _TrackStage.values;
@@ -280,7 +277,7 @@ class _OrderDetailSheetContent extends StatelessWidget {
           _detailRow(
               Icons.calendar_today_outlined,
               'Pick Up',
-              '${dateFormat.format(order.pickupDate)}${order.pickupDate.isBefore(DateTime.now().add(const Duration(hours: 23))) ? ' (Hari Ini)' : ''}'),
+              '${dateFormat.format(order.pickupDate)}${formatRelativeDate(order.pickupDate)}'),
           if (order.customerAddress.isNotEmpty)
             _detailRow(
                 Icons.home_outlined, 'Alamat', order.customerAddress),
@@ -288,11 +285,11 @@ class _OrderDetailSheetContent extends StatelessWidget {
             _detailRow(
                 Icons.receipt_long_outlined,
                 'Estimasi Biaya',
-                currencyFormat.format(order.estimatedTotal!)),
+                formatRupiah(order.estimatedTotal!)),
           // ── Diskon (jika ada) ──
           if (order.discount > 0) ...[
             _priceRow(
-              originalPrice: currencyFormat.format(order.totalPrice),
+              originalPrice: formatRupiah(order.totalPrice),
               discountAmount: order.discount,
               finalPrice: order.finalPrice,
               voucherCode: order.voucherCode,
@@ -301,7 +298,7 @@ class _OrderDetailSheetContent extends StatelessWidget {
             _detailRow(
                 Icons.payments_outlined,
                 'Total Dibayar',
-                currencyFormat.format(order.finalPrice)),
+                formatRupiah(order.finalPrice)),
           ],
           if (order.notes != null && order.notes!.isNotEmpty)
             _detailRow(Icons.notes_outlined, 'Catatan', order.notes!),
@@ -393,7 +390,7 @@ class _OrderDetailSheetContent extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '-${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(discountAmount)}',
+                  '-${formatRupiah(discountAmount)}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -419,7 +416,7 @@ class _OrderDetailSheetContent extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(finalPrice),
+                  formatRupiah(finalPrice),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

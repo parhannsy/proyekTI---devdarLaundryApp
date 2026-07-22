@@ -95,7 +95,9 @@ class SeedService {
       'totalSavings': totalSavings,
       'hasSeenSplash': role == 'customer', // customer seeding skip splash
       'isProfileComplete': true,
-      'address': role == 'customer' ? 'Jl. Merdeka No. 10, Jakarta Pusat' : '',
+      'addresses': role == 'customer'
+          ? [{'address': 'Jl. Merdeka No. 10, Jakarta Pusat', 'label': 'Utama', 'isDefault': true}]
+          : [],
       'createdAt': joinDate,
     });
 
@@ -120,7 +122,9 @@ class SeedService {
         'role': email == _customerEmail ? 'customer' : 'admin',
         'hasSeenSplash': email == _customerEmail, // customer skip splash
         'isProfileComplete': true,
-        'address': email == _customerEmail ? 'Jl. Merdeka No. 10, Jakarta Pusat' : '',
+        'addresses': email == _customerEmail
+            ? [{'address': 'Jl. Merdeka No. 10, Jakarta Pusat', 'label': 'Utama', 'isDefault': true}]
+            : [],
         'loyaltyPoints': email == _customerEmail ? 320 : 0,
         'totalSavings': email == _customerEmail ? 125000 : 0,
         'createdAt': email == _customerEmail

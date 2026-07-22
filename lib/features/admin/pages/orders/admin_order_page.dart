@@ -8,6 +8,7 @@ import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_sli
 import 'package:devdar_laundry_pos_app/features/shared/widgets/order_detail_sheet.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/date_formatter.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_empty_state.dart';
 
@@ -602,7 +603,7 @@ class _AdminOrderCard extends StatelessWidget {
                       _infoChip(Icons.scale_outlined, order.quantityLabel),
                       _infoChip(
                         Icons.calendar_today_outlined,
-                        DateFormat('d MMM yy', 'id').format(order.pickupDate),
+                        '${DateFormat('d MMM yy', 'id').format(order.pickupDate)}${formatRelativeDate(order.pickupDate)}',
                       ),
                       if (order.estimatedTotal != null)
                         _infoChip(

@@ -81,6 +81,7 @@ class AuthProvider extends ChangeNotifier {
     String? nickname,
     String? phone,
     String? address,
+    List<AddressModel>? addresses,
   }) async {
     if (_currentUser == null) throw Exception('User tidak ditemukan.');
 
@@ -90,6 +91,7 @@ class AuthProvider extends ChangeNotifier {
       nickname: nickname,
       phone: phone,
       address: address,
+      addresses: addresses,
     );
 
     _currentUser = updated;

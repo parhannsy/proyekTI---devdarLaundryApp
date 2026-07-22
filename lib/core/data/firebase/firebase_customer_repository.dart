@@ -87,6 +87,18 @@ class FirebaseCustomerRepository implements CustomerRepository {
     });
   }
 
+  /// Parse addresses dari Firestore, dengan fallback ke field 'address' lama.
+  List<AddressModel> _parseAddresses(Map<String, dynamic> data) {
+    final list = (data['addresses'] as List<dynamic>?)
+        ?.map((a) => AddressModel.fromJson(a as Map<String, dynamic>))
+        .toList();
+    if (list != null && list.isNotEmpty) return list;
+    if (data['address'] != null && (data['address'] as String).isNotEmpty) {
+      return [AddressModel(address: data['address'], label: 'Utama', isDefault: true)];
+    }
+    return [];
+  }
+
   UserModel _userFromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return UserModel(
@@ -95,7 +107,7 @@ class FirebaseCustomerRepository implements CustomerRepository {
       nickname: data['nickname'],
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
-      address: data['address'],
+      addresses: _parseAddresses(data),
       role: UserRole.customer,
       loyaltyPoints: data['loyaltyPoints'] ?? 0,
       totalSavings: (data['totalSavings'] ?? 0).toDouble(),

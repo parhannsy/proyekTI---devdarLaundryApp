@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:devdar_laundry_pos_app/core/theme/formatter/app_colors.dart';
+import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
 import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_bar.dart';
 import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_card.dart';
@@ -40,7 +41,7 @@ class ProfilePage extends StatelessWidget {
                   child: _ProfileMenuItem(
                     icon: Icons.person_outline,
                     label: 'Edit Profil',
-                    onTap: () => _showEditProfileDialog(context),
+                    onTap: () => context.push('/customer/profile/edit'),
                   ),
                 ),
                 AnimatedFadeSlider(
@@ -99,77 +100,6 @@ class ProfilePage extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
             child: const Text('Keluar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditProfileDialog(BuildContext context) {
-    final auth = context.read<AuthProvider>();
-    final user = auth.currentUser;
-    if (user == null) return;
-
-    final nameCtrl = TextEditingController(text: user.name);
-    final nicknameCtrl = TextEditingController(text: user.nickname ?? '');
-    final phoneCtrl = TextEditingController(text: user.phone);
-    final addressCtrl = TextEditingController(text: user.address ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Profil'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ProfileField(label: 'Nama Lengkap', controller: nameCtrl),
-              const SizedBox(height: 10),
-              _ProfileField(label: 'Panggilan', controller: nicknameCtrl),
-              const SizedBox(height: 10),
-              _ProfileField(label: 'No. Telepon', controller: phoneCtrl, keyboardType: TextInputType.phone),
-              const SizedBox(height: 10),
-              _ProfileField(label: 'Alamat', controller: addressCtrl, maxLines: 2),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await auth.updateProfile(
-                  name: nameCtrl.text.trim(),
-                  nickname: nicknameCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim(),
-                  address: addressCtrl.text.trim(),
-                );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Profil berhasil diperbarui'),
-                      backgroundColor: AppColor.success,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Gagal: ${e.toString().replaceFirst('Exception: ', '')}'),
-                      backgroundColor: AppColor.error,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColor.primary),
-            child: const Text('Simpan', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -294,40 +224,6 @@ class _PasswordFieldState extends State<_PasswordField> {
   }
 }
 
-class _ProfileField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final TextInputType? keyboardType;
-  final int maxLines;
-
-  const _ProfileField({
-    required this.label,
-    required this.controller,
-    this.keyboardType,
-    this.maxLines = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(fontSize: 13, color: AppColor.textSecondary),
-        filled: true,
-        fillColor: AppColor.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    );
-  }
-}
-
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader();
 
@@ -382,20 +278,13 @@ class _StatsRow extends StatelessWidget {
 
     return Row(
       children: [
-        MiniStatCard(label: 'Poin', value: '$points', icon: Icons.star_rounded, color: AppColor.warning, showIconBackground: true),
+        MiniStatCard(label: 'Poin', value: formatDecimal(points), icon: Icons.star_rounded, color: AppColor.warning, showIconBackground: true),
         const SizedBox(width: 12),
-        MiniStatCard(label: 'Total Hemat', value: 'Rp ${_formatSavings(savings)}', icon: Icons.savings_outlined, color: AppColor.success, showIconBackground: true),
+        MiniStatCard(label: 'Total Hemat', value: formatRupiahCompact(savings), icon: Icons.savings_outlined, color: AppColor.success, showIconBackground: true),
         const SizedBox(width: 12),
         MiniStatCard(label: 'Order', value: '14x', icon: Icons.inventory_2_outlined, color: AppColor.primary, showIconBackground: true),
       ],
     );
-  }
-
-  String _formatSavings(double amount) {
-    if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K';
-    }
-    return amount.toStringAsFixed(0);
   }
 }
 

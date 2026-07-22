@@ -27,6 +27,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   bool _pickupToday = true;
   DateTime _pickupDate = DateTime.now();
   bool _isSubmitting = false;
+  String _selectedAddress = '';
+  bool _addressPickerInitialized = false;
+  bool _popPrevented = false;
+  final _pendingNewAddressCtrl = TextEditingController();
+  bool _pendingSaveLocation = false;
+  final _pendingLabelCtrl = TextEditingController();
+  String _addressSearchQuery = '';
 
   static const _categories = OrderCategory.values;
 
@@ -57,6 +64,15 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().currentUser;
+      if (user != null && !_addressPickerInitialized) {
+        setState(() {
+          _selectedAddress = user.address ?? '';
+          _addressPickerInitialized = true;
+        });
+      }
+    });
   }
 
   @override
@@ -66,6 +82,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _panjangCtrl.dispose();
     _lebarCtrl.dispose();
     _notesCtrl.dispose();
+    _pendingNewAddressCtrl.dispose();
+    _pendingLabelCtrl.dispose();
     super.dispose();
   }
 
@@ -138,7 +156,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         id: '',
         customerId: user.id,
         customerName: user.name,
-        customerAddress: user.address ?? '',
+        customerAddress: _selectedAddress.isNotEmpty
+            ? _selectedAddress
+            : user.address ?? '',
         category: _selectedCategory,
         itemName: _itemNameCtrl.text.trim(),
         unitType: _selectedUnitType,
@@ -174,15 +194,81 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     }
   }
 
+  Future<bool> _showExitConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColor.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.logout_rounded,
+                  size: 20, color: AppColor.warning),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Tinggalkan Halaman?',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Anda tengah membuat pesanan baru, batalkan proses?',
+          style: TextStyle(fontSize: 14, color: AppColor.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjutkan',
+                style: TextStyle(color: AppColor.primary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Batalkan'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
 
-    return Scaffold(
-      backgroundColor: AppColor.background,
-      body: SafeArea(
-        child: Form(
+    return PopScope(
+      canPop: _popPrevented,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop || _popPrevented) return;
+        final shouldPop = await _showExitConfirmation();
+        if (shouldPop && context.mounted) {
+          setState(() => _popPrevented = true);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) Navigator.pop(context);
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColor.background,
+        body: SafeArea(
+          child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -215,47 +301,54 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // ── Alamat (dari akun) ────────────────────
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColor.primary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColor.primary.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.home_outlined,
-                          size: 18, color: AppColor.primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Alamat Pengambilan',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColor.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              user?.address?.isNotEmpty == true
-                                  ? user!.address!
-                                  : 'Belum diisi — lengkapi di profil',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColor.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
+                // ── Alamat (clickable → bottom sheet) ──
+                InkWell(
+                  onTap: () => _showAddressPicker(context, user),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColor.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColor.primary.withValues(alpha: 0.15),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.home_outlined,
+                            size: 18, color: AppColor.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Alamat Pengambilan',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColor.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                _selectedAddress.isNotEmpty
+                                    ? _selectedAddress
+                                    : 'Belum diisi — ketuk untuk pilih',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColor.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded,
+                            size: 20, color: AppColor.textMuted),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -648,9 +741,416 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
+  void _showAddressPicker(BuildContext context, UserModel? user) {
+    // Reset search
+    _addressSearchQuery = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          // Filter alamat berdasarkan pencarian
+          final filteredAddresses = user != null && user.addresses.isNotEmpty
+              ? (_addressSearchQuery.isEmpty
+                  ? user.addresses
+                  : user.addresses.where((a) {
+                      final q = _addressSearchQuery.toLowerCase();
+                      return a.address.toLowerCase().contains(q) ||
+                          (a.label?.toLowerCase().contains(q) ?? false);
+                    }).toList())
+              : <AddressModel>[];
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.92,
+              maxChildSize: 1.0,
+              minChildSize: 0.5,
+              expand: false,
+              builder: (_, scrollCtrl) => ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  // ── Drag handle ──
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Header ──
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 20, color: AppColor.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: const Text(
+                          'Pilih Alamat',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.textPrimary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close, size: 20),
+                        color: AppColor.textMuted,
+                        splashRadius: 18,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── Content scrollable ──
+                  // Note: seluruh konten sudah di dalam ListView (scrollCtrl)
+                          // ── Search bar ──
+                          if (user != null && user.addresses.isNotEmpty) ...[
+                            TextField(
+                              onChanged: (v) => setSheetState(
+                                  () => _addressSearchQuery = v),
+                              decoration: InputDecoration(
+                                hintText: 'Cari alamat atau label...',
+                                hintStyle: const TextStyle(
+                                    fontSize: 13, color: AppColor.textMuted),
+                                prefixIcon: const Icon(Icons.search,
+                                    size: 20, color: AppColor.iconSecondary),
+                                filled: true,
+                                fillColor: AppColor.background,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            if (filteredAddresses.isEmpty) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                child: const Center(
+                                  child: Text(
+                                    'Alamat tidak ditemukan',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColor.textMuted),
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              const Text(
+                                'Alamat Tersimpan',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColor.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...filteredAddresses.map((addr) {
+                                final isSelected =
+                                    addr.address == _selectedAddress;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() =>
+                                            _selectedAddress = addr.address);
+                                        Navigator.pop(ctx);
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? AppColor.primary
+                                                  .withValues(alpha: 0.06)
+                                              : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? AppColor.primary
+                                                    .withValues(alpha: 0.4)
+                                                : AppColor.divider,
+                                            width: isSelected ? 2 : 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: AppColor.primary
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Icon(
+                                                  Icons.home_outlined,
+                                                  size: 18,
+                                                  color: AppColor.primary),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  if (addr.label != null)
+                                                    Text(
+                                                      addr.label!,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: AppColor
+                                                            .textPrimary,
+                                                      ),
+                                                    ),
+                                                  Text(
+                                                    addr.address,
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: AppColor
+                                                          .textSecondary,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            if (addr.isDefault)
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: AppColor.primary
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: const Text(
+                                                  'Utama',
+                                                  style: TextStyle(
+                                                      fontSize: 9,
+                                                      color: AppColor.primary,
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              isSelected
+                                                  ? Icons
+                                                      .check_circle_rounded
+                                                  : Icons
+                                                      .radio_button_unchecked_rounded,
+                                              size: 20,
+                                              color: isSelected
+                                                  ? AppColor.primary
+                                                  : AppColor.textMuted,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                            const SizedBox(height: 12),
+                            const Divider(),
+                            const SizedBox(height: 12),
+                          ],
+
+                          // ── Tambah alamat baru ──
+                          const Text(
+                            'Tambah Lokasi Baru',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColor.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _pendingNewAddressCtrl,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText: 'Alamat lengkap',
+                              hintText: 'Masukkan alamat penjemputan & pengiriman',
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.only(bottom: 24),
+                                child: Icon(Icons.add_location_outlined,
+                                    size: 20, color: AppColor.iconSecondary),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+
+                          // ── Simpan lokasi ──
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => setSheetState(() {
+                              _pendingSaveLocation = !_pendingSaveLocation;
+                              if (!_pendingSaveLocation) {
+                                _pendingLabelCtrl.clear();
+                              }
+                            }),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 8),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _pendingSaveLocation
+                                        ? Icons.check_box_rounded
+                                        : Icons.check_box_outline_blank_rounded,
+                                    size: 22,
+                                    color: _pendingSaveLocation
+                                        ? AppColor.primary
+                                        : AppColor.textMuted,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Simpan lokasi ini',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: _pendingSaveLocation
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      color: AppColor.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_pendingSaveLocation) ...[
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _pendingLabelCtrl,
+                              decoration: InputDecoration(
+                                labelText: 'Label lokasi',
+                                hintText: 'Contoh: Rumah, Kantor, Sekolah',
+                                prefixIcon: const Icon(Icons.label_outline,
+                                    size: 20, color: AppColor.iconSecondary),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+
+                          // ── Tombol pakai ──
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                final newAddr =
+                                    _pendingNewAddressCtrl.text.trim();
+                                if (newAddr.isEmpty) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Masukkan alamat terlebih dahulu'),
+                                      backgroundColor: AppColor.error,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // Simpan ke akun jika dicentang
+                                if (_pendingSaveLocation && user != null) {
+                                  final label =
+                                      _pendingLabelCtrl.text.trim().isNotEmpty
+                                          ? _pendingLabelCtrl.text.trim()
+                                          : null;
+                                  final newAddress = AddressModel(
+                                    address: newAddr,
+                                    label: label,
+                                    isDefault: user.addresses.isEmpty,
+                                  );
+                                  final updatedAddresses = [
+                                    ...user.addresses,
+                                    newAddress,
+                                  ];
+                                  context
+                                      .read<AuthProvider>()
+                                      .updateProfile(
+                                    addresses: updatedAddresses,
+                                  );
+                                }
+
+                                setState(() => _selectedAddress = newAddr);
+                                Navigator.pop(ctx);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColor.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Gunakan Alamat Ini',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _CategoryMeta {

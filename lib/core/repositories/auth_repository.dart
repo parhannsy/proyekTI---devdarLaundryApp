@@ -22,7 +22,7 @@ abstract class AuthRepository {
     required String name,
     required String nickname,
     required String phone,
-    required String address,
+    required String address, // alamat pertama
   });
 
   /// Tandai bahwa user sudah melihat welcome splash.
@@ -35,7 +35,8 @@ abstract class AuthRepository {
     String? name,
     String? nickname,
     String? phone,
-    String? address,
+    String? address, // update alamat default
+    List<AddressModel>? addresses, // replace semua alamat
   });
 
   /// Ganti password user yang sedang login (re-authenticate + update).

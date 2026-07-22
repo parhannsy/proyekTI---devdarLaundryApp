@@ -1,3 +1,5 @@
+import 'address_model.dart';
+
 enum UserRole { customer, admin }
 
 class UserModel {
@@ -6,7 +8,7 @@ class UserModel {
   final String? nickname;
   final String email;
   final String phone;
-  final String? address;
+  final List<AddressModel> addresses;
   final UserRole role;
   final int loyaltyPoints;
   final double totalSavings;
@@ -22,7 +24,7 @@ class UserModel {
     required this.phone,
     required this.role,
     this.nickname,
-    this.address,
+    this.addresses = const [],
     this.loyaltyPoints = 0,
     this.totalSavings = 0.0,
     this.avatarUrl,
@@ -31,13 +33,26 @@ class UserModel {
     this.isProfileComplete = false,
   });
 
+  /// Alamat utama (default). Jika tidak ada yang default, ambil yang pertama.
+  AddressModel? get defaultAddress {
+    if (addresses.isEmpty) return null;
+    try {
+      return addresses.firstWhere((a) => a.isDefault);
+    } catch (_) {
+      return addresses.first;
+    }
+  }
+
+  /// Nama depan alamat default (untuk kompatibilitas).
+  String? get address => defaultAddress?.address;
+
   UserModel copyWith({
     String? id,
     String? name,
     String? nickname,
     String? email,
     String? phone,
-    String? address,
+    List<AddressModel>? addresses,
     UserRole? role,
     int? loyaltyPoints,
     double? totalSavings,
@@ -52,7 +67,7 @@ class UserModel {
       nickname: nickname ?? this.nickname,
       email: email ?? this.email,
       phone: phone ?? this.phone,
-      address: address ?? this.address,
+      addresses: addresses ?? this.addresses,
       role: role ?? this.role,
       loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       totalSavings: totalSavings ?? this.totalSavings,

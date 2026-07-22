@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
 import 'package:devdar_laundry_pos_app/core/providers/auth_provider.dart';
@@ -106,7 +104,36 @@ class _OrderPageState extends State<OrderPage>
       backgroundColor: AppColor.background,
       body: Column(
         children: [
-          const MinimalBar(title: 'Pesanan Saya'),
+          MinimalBar(
+            title: 'Pesanan Saya',
+            actions: [
+              SizedBox(
+                height: 36,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await context.push<bool>(
+                      '/customer/orders/create',
+                    );
+                    if (result == true) _loadOrders();
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text(
+                    'Baru',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColor.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
 
           // ── Tab bar ──────────────────────────
           Container(
@@ -183,24 +210,7 @@ class _OrderPageState extends State<OrderPage>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await context.push<bool>(
-            '/customer/orders/create',
-          );
-          if (result == true) _loadOrders();
-        },
-        backgroundColor: AppColor.primary,
-        icon: const Icon(Icons.add, color: Colors.white, size: 20),
-        label: const Text(
-          'Order Baru',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
+
     );
   }
 
@@ -269,7 +279,6 @@ class _OrderPageState extends State<OrderPage>
   }
 
   void _showAgreeSheet(BuildContext context, OrderModel order, double basePrice, List<VoucherModel> vouchers) {
-    final fmt = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
     VoucherModel? selectedVoucher;
 
     double calcDiscount(VoucherModel? v) {
@@ -361,7 +370,7 @@ class _OrderPageState extends State<OrderPage>
                               ),
                             ),
                             Text(
-                              fmt.format(basePrice),
+                              formatRupiah(basePrice),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -397,7 +406,7 @@ class _OrderPageState extends State<OrderPage>
                                 ],
                               ),
                               Text(
-                                '-${fmt.format(discAmount)}',
+                                '-${formatRupiah(discAmount)}',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -422,7 +431,7 @@ class _OrderPageState extends State<OrderPage>
                                 ),
                               ),
                               Text(
-                                fmt.format(finalPrice),
+                                formatRupiah(finalPrice),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
