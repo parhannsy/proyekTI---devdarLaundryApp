@@ -11,6 +11,7 @@ import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_
 import 'package:devdar_laundry_pos_app/features/customer/shared_widgets/minimal_card.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/animated_fade_slider.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/order_detail_sheet.dart';
+import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({super.key});
@@ -33,9 +34,10 @@ class _OrderPageState extends State<OrderPage>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<OrderProvider>();
+      // Daftar listener agar halaman update saat stream mengirim data baru
       provider.addListener(_onOrdersChanged);
       _syncOrders(provider);
-      _loadOrders();
+      _startStream();
     });
   }
 
@@ -43,6 +45,7 @@ class _OrderPageState extends State<OrderPage>
   void dispose() {
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    // Hapus listener agar tidak memory leak
     try {
       context.read<OrderProvider>().removeListener(_onOrdersChanged);
     } catch (_) {}
@@ -66,11 +69,14 @@ class _OrderPageState extends State<OrderPage>
     setState(() {});
   }
 
-  void _loadOrders() {
+  void _startStream() {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
     if (user != null) {
-      context.read<OrderProvider>().loadCustomerOrders(user.id);
+      // Realtime stream — setiap perubahan dari Firestore/Mock langsung
+      // mengupdate _orders via notifyListeners(), dan listener di atas
+      // akan memanggil _syncOrders() untuk memperbarui UI
+      context.read<OrderProvider>().listenCustomerOrders(user.id);
     }
   }
 
@@ -98,7 +104,14 @@ class _OrderPageState extends State<OrderPage>
   @override
   Widget build(BuildContext context) {
     final activeOrders = _orders.where((o) => o.status.isActive).toList();
-    final completedOrders = _orders.where((o) => !o.status.isActive).toList();
+    final failedOrders = _orders
+        .where((o) =>
+            o.status == OrderStatus.rejected ||
+            o.status == OrderStatus.cancelled)
+        .toList();
+    final nonCompletedOrders = _orders
+        .where((o) => o.status != OrderStatus.completed)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColor.background,
@@ -107,6 +120,28 @@ class _OrderPageState extends State<OrderPage>
           MinimalBar(
             title: 'Pesanan Saya',
             actions: [
+              // ── History button ─────────────────────
+              SizedBox(
+                height: 36,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(AppRoutes.customerHistory),
+                  icon: const Icon(Icons.history_rounded, size: 16),
+                  label: const Text(
+                    'Riwayat',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColor.primary,
+                    side: const BorderSide(color: AppColor.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // ── New Order button ───────────────────
               SizedBox(
                 height: 36,
                 child: ElevatedButton.icon(
@@ -114,7 +149,10 @@ class _OrderPageState extends State<OrderPage>
                     final result = await context.push<bool>(
                       '/customer/orders/create',
                     );
-                    if (result == true) _loadOrders();
+                    if (result == true) {
+                      // Stream sudah aktif — akan otomatis update
+                      _syncOrders(context.read<OrderProvider>());
+                    }
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text(
@@ -167,12 +205,13 @@ class _OrderPageState extends State<OrderPage>
                 dividerColor: Colors.transparent,
                 tabs: [
                   Tab(text: 'Aktif (${activeOrders.length})'),
-                  Tab(text: 'Selesai (${completedOrders.length})'),
-                  Tab(text: 'Semua (${_orders.length})'),
+                  Tab(text: 'Gagal (${failedOrders.length})'),
+                  Tab(text: 'Semua (${nonCompletedOrders.length})'),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 4),
 
           // ── Content ───────────────────────────
           Expanded(
@@ -191,14 +230,17 @@ class _OrderPageState extends State<OrderPage>
                         onAgree: (order) => _agreeToOrder(context, order),
                       ),
                       _OrderListView(
-                        key: const ValueKey('cust_tab_completed'),
-                        orders: completedOrders,
-                        emptyMsg: 'Belum ada pesanan selesai',
+                        key: const ValueKey('cust_tab_failed'),
+                        orders: failedOrders,
+                        emptyMsg: 'Tidak ada pesanan gagal',
                         statusColorFn: _statusColor,
+                        showActions: true,
+                        onCancel: (order) => _confirmCancel(context, order),
+                        onAgree: (order) => _agreeToOrder(context, order),
                       ),
                       _OrderListView(
                         key: const ValueKey('cust_tab_all'),
-                        orders: _orders,
+                        orders: nonCompletedOrders,
                         emptyMsg: 'Belum ada pesanan',
                         statusColorFn: _statusColor,
                         showActions: true,

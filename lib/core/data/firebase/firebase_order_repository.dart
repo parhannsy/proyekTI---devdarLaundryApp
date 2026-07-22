@@ -121,6 +121,22 @@ class FirebaseOrderRepository implements OrderRepository {
   }
 
   @override
+  Stream<List<OrderModel>> streamOrdersByCustomer(String customerId) {
+    // ⚠️ Tidak pakai .orderBy() karena butuh composite index.
+    // Sortir manual di memory aja biar gak error.
+    return _orders
+        .where('customerId', isEqualTo: customerId)
+        .snapshots()
+        .map((snapshot) {
+          final orders = snapshot.docs
+              .map((doc) => _orderFromDoc(doc))
+              .toList();
+          orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return orders;
+        });
+  }
+
+  @override
   Future<void> deleteOrder(String id) async {
     await _orders.doc(id).delete();
   }

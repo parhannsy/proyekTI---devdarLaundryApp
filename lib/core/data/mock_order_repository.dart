@@ -125,6 +125,37 @@ class MockOrderRepository implements OrderRepository {
   }
 
   @override
+  Stream<List<OrderModel>> streamOrdersByCustomer(String customerId) {
+    final controller = StreamController<List<OrderModel>>.broadcast();
+
+    // Emit data setiap 3 detik agar realtime terlihat
+    final timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!controller.isClosed) {
+        final filtered = _orders
+            .where((o) => o.customerId == customerId)
+            .toList();
+        controller.add(filtered);
+      }
+    });
+
+    controller.onCancel = () {
+      timer.cancel();
+    };
+
+    // Emit data awal segera
+    Future.microtask(() {
+      if (!controller.isClosed) {
+        final filtered = _orders
+            .where((o) => o.customerId == customerId)
+            .toList();
+        controller.add(filtered);
+      }
+    });
+
+    return controller.stream;
+  }
+
+  @override
   Future<void> deleteOrder(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _orders.removeWhere((o) => o.id == id);

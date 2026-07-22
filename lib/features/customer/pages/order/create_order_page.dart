@@ -178,7 +178,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             backgroundColor: AppColor.success,
           ),
         );
-        Navigator.pop(context, true);
+        // Bypass PopScope — rebuild widget dulu, baru pop
+        setState(() => _popPrevented = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.pop(context, true);
+        });
       }
     } catch (e) {
       if (mounted) {

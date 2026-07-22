@@ -29,6 +29,9 @@ abstract class OrderRepository {
   /// Stream realtime untuk semua order (admin).
   Stream<List<OrderModel>> streamAllOrders();
 
+  /// Stream realtime untuk order milik satu customer tertentu.
+  Stream<List<OrderModel>> streamOrdersByCustomer(String customerId);
+
   /// Menghapus order (soft delete, oleh admin).
   Future<void> deleteOrder(String id);
 }

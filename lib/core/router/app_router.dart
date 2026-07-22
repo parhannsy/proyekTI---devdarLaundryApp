@@ -23,6 +23,7 @@ import '../../features/admin/pages/missions/admin_mission_page.dart';
 import '../../features/admin/pages/customers/admin_customer_page.dart';
 import '../../features/admin/pages/reports/admin_report_page.dart';
 import '../../features/admin/pages/settings/admin_settings_page.dart';
+import '../../features/shared/widgets/order_history_page.dart';
 
 class AppRoutes {
   static const login = '/';
@@ -30,11 +31,13 @@ class AppRoutes {
   static const completeProfile = '/complete-profile';
   static const customerDashboard = '/customer/dashboard';
   static const customerOrders = '/customer/orders';
+  static const customerHistory = '/customer/history';
   static const customerMissions = '/customer/missions';
   static const customerProfile = '/customer/profile';
   static const customerDiscount = '/customer/discount';
   static const adminDashboard = '/admin/dashboard';
   static const adminOrders = '/admin/orders';
+  static const adminHistory = '/admin/history';
   static const adminVouchers = '/admin/vouchers';
   static const adminMissions = '/admin/missions';
   static const adminCustomers = '/admin/customers';
@@ -125,6 +128,14 @@ class AppRouter {
               builder: (_, __) => const CreateOrderPage(),
             ),
             GoRoute(
+              path: AppRoutes.customerHistory,
+              name: 'customerHistory',
+              builder: (_, __) => const OrderHistoryPage(
+                title: 'Riwayat Pesanan',
+                isCustomer: true,
+              ),
+            ),
+            GoRoute(
               path: AppRoutes.customerMissions,
               name: 'customerMissions',
               builder: (_, __) => const MissionPage(),
@@ -165,6 +176,13 @@ class AppRouter {
               path: AppRoutes.adminOrders,
               name: 'adminOrders',
               builder: (_, __) => const AdminOrderPage(),
+            ),
+            GoRoute(
+              path: AppRoutes.adminHistory,
+              name: 'adminHistory',
+              builder: (_, __) => const OrderHistoryPage(
+                title: 'Riwayat Order',
+              ),
             ),
             GoRoute(
               path: AppRoutes.adminVouchers,

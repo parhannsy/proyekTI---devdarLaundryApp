@@ -23,14 +23,24 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startStream();
+    });
   }
 
-  void _loadOrders() {
+  @override
+  void dispose() {
+    // Stream dihentikan otomatis saat page lain dipanggil
+    // karena listenCustomerOrders akan cancel subscription sebelumnya
+    super.dispose();
+  }
+
+  void _startStream() {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
     if (user != null) {
-      context.read<OrderProvider>().loadCustomerOrders(user.id);
+      // Realtime — setiap perubahan dari Firestore langsung update dashboard
+      context.read<OrderProvider>().listenCustomerOrders(user.id);
     }
   }
 

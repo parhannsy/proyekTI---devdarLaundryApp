@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -206,6 +207,18 @@ class _RouterRootState extends State<_RouterRoot> {
           indicatorColor: Colors.white,
         ),
       ),
+
+      // ── Lokalisasi (untuk date picker dll) ────────────────────────────────
+      locale: const Locale('id'),
+      supportedLocales: const [
+        Locale('id', 'ID'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
 
       // ── Router ─────────────────────────────────────────────────────────────
       routerConfig: _router,

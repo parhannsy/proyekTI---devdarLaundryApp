@@ -53,6 +53,33 @@ class OrderProvider extends ChangeNotifier {
     _streamSub = null;
   }
 
+  // ── Stream (Customer - realtime) ──────────────────────────
+
+  /// Mulai mendengarkan stream realtime order milik satu customer.
+  /// Setiap ada perubahan data, `_orders` akan otomatis update
+  /// dan Consumer/Listener di UI akan rebuild.
+  void listenCustomerOrders(String customerId) {
+    _streamSub?.cancel();
+
+    _isLoading = true;
+    notifyListeners();
+
+    _streamSub = _repository.streamOrdersByCustomer(customerId).listen(
+      (updatedOrders) {
+        _orders = updatedOrders;
+        _errorMessage = null;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (Object error) {
+        _errorMessage = error.toString();
+        _isLoading = false;
+        notifyListeners();
+        debugPrint('[OrderProvider] Customer stream error: $error');
+      },
+    );
+  }
+
   // ── Admin ──────────────────────────────────────────────────
 
   Future<void> loadAllOrders() async {

@@ -11,6 +11,7 @@ import 'package:devdar_laundry_pos_app/core/providers/order_provider.dart';
 import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_stat_card.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
+import 'package:devdar_laundry_pos_app/features/shared/widgets/order_toast.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -21,6 +22,8 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final NumberFormat _fmt = NumberFormat.compactCurrency(locale: 'id', symbol: 'Rp ', decimalDigits: 1);
+  int _prevRequestCount = 0;
+  bool _initialLoad = true;
 
   @override
   void initState() {
@@ -40,88 +43,111 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final userName = auth.currentUser?.name ?? 'Admin Devdara';
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Consumer<OrderProvider>(
-        builder: (context, orderProv, _) {
-          final orders = orderProv.orders;
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 700;
-              return RefreshIndicator(
-                onRefresh: () => orderProv.loadAllOrders(),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      AnimatedFadeSlider(
-                        index: 1,
-                        child: AdminPageHeader(
-                          title: 'Dashboard',
-                          subtitle: orderProv.isLoading
-                              ? 'Memuat data...'
-                              : 'Selamat datang, $userName',
-                        ),
+    return Consumer<OrderProvider>(
+      builder: (context, orderProv, _) {
+        final orders = orderProv.orders;
+
+        // ── Deteksi permohonan baru (di luar build) ──
+        if (!orderProv.isLoading && orders.isNotEmpty) {
+          final currentRequestCount =
+              orders.where((o) => o.status == OrderStatus.request).length;
+          final countChanged = currentRequestCount != _prevRequestCount;
+
+          if (countChanged) {
+            final newRequests = currentRequestCount - _prevRequestCount;
+            _prevRequestCount = currentRequestCount;
+
+            if (newRequests > 0 && !_initialLoad) {
+              // Tunda ke post-frame agar tidak error "setState during build"
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  OrderToastService.showRequestToast(context, newRequests);
+                }
+              });
+            }
+
+            if (_initialLoad) {
+              _initialLoad = false;
+            }
+          }
+        }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 700;
+            return RefreshIndicator(
+              onRefresh: () => orderProv.loadAllOrders(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    AnimatedFadeSlider(
+                      index: 1,
+                      child: AdminPageHeader(
+                        title: 'Dashboard',
+                        subtitle: orderProv.isLoading
+                            ? 'Memuat data...'
+                            : 'Selamat datang, $userName',
                       ),
+                    ),
 
-                      // Stat cards grid — real data
-                      AnimatedFadeSlider(
-                        index: 2,
-                        child: _buildStatGrid(context, isWide, orders),
-                      ),
+                    // Stat cards grid — real data
+                    AnimatedFadeSlider(
+                      index: 2,
+                      child: _buildStatGrid(constraints, isWide, orders),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                      // Recent orders + quick actions
-                      AnimatedFadeSlider(
-                        index: 3,
-                        child: isWide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: _buildRecentOrders(context, orders),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    flex: 2,
-                                    child: _buildQuickActions(context),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                children: [
-                                  _buildRecentOrders(context, orders),
-                                  const SizedBox(height: 16),
-                                  _buildQuickActions(context),
-                                ],
-                              ),
-                      ),
+                    // Recent orders + quick actions
+                    AnimatedFadeSlider(
+                      index: 3,
+                      child: isWide
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: _buildRecentOrders(context, orders),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildQuickActions(context),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                _buildRecentOrders(context, orders),
+                                const SizedBox(height: 16),
+                                _buildQuickActions(context),
+                              ],
+                            ),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                      // Status summary — real data
-                      AnimatedFadeSlider(
-                        index: 4,
-                        child: _buildStatusSummary(context, orderProv, orders),
-                      ),
-                    ],
-                  ),
+                    // Status summary — real data
+                    AnimatedFadeSlider(
+                      index: 4,
+                      child: _buildStatusSummary(context, orderProv, orders),
+                    ),
+                  ],
                 ),
-              );
-            },
-          );
-        },
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
   // ── Stat Cards ─────────────────────────────────────────────
 
-  Widget _buildStatGrid(BuildContext context, bool isWide, List<OrderModel> orders) {
+  Widget _buildStatGrid(BoxConstraints constraints, bool isWide, List<OrderModel> orders) {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
 
@@ -232,33 +258,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // ── Recent Orders ──────────────────────────────────────────
-
-  /// Urutan prioritas status: Permohonan → Diterima → Diproses → Diantar → Selesai
-  int _statusPriority(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.request:
-        return 0;
-      case OrderStatus.accepted:
-        return 1;
-      case OrderStatus.pickedUp:
-        return 2;
-      case OrderStatus.processing:
-        return 3;
-      case OrderStatus.delivering:
-        return 4;
-      case OrderStatus.completed:
-        return 5;
-      default:
-        return 9; // rejected, cancelled di belakang
-    }
-  }
+  // ── Recent Orders (hanya permohonan) ───────────────────────
 
   Widget _buildRecentOrders(BuildContext context, List<OrderModel> orders) {
-    // Urutkan: Permohonan → Diterima → Diproses → Diantar → Selesai
-    final sorted = List<OrderModel>.from(orders)
-      ..sort((a, b) => _statusPriority(a.status).compareTo(_statusPriority(b.status)));
-    final recent = sorted.length > 5 ? sorted.sublist(0, 5) : sorted;
+    // Filter: hanya permohonan, urut dari paling lama
+    final requests = List<OrderModel>.from(
+      orders.where((o) => o.status == OrderStatus.request),
+    )..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    final displayLimit = 5;
+    final displayOrders =
+        requests.length > displayLimit ? requests.sublist(0, displayLimit) : requests;
+    final hasOverflow = requests.length > displayLimit;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -275,17 +286,42 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // ── Header ──────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Order Terkini',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppColor.textPrimary,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Order Terkini',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppColor.textPrimary,
+                    ),
+                  ),
+                  if (requests.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColor.warning.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${requests.length}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               TextButton(
                 onPressed: () => context.go(AppRoutes.adminOrders),
@@ -296,88 +332,128 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
             ],
           ),
-          const Divider(height: 16),
-          if (recent.isEmpty)
+          const Divider(height: 12),
+
+          // ── List (scrollable jika overflow) ────
+          if (displayOrders.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'Belum ada pesanan',
+                  'Belum ada permohonan masuk',
                   style: TextStyle(color: AppColor.textMuted, fontSize: 13),
                 ),
               ),
             )
           else
-            ...recent.map((o) => _buildOrderRow(o)),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: hasOverflow ? 5 * 64.0 : displayOrders.length * 64.0,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: hasOverflow
+                    ? const AlwaysScrollableScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
+                itemCount: displayOrders.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, indent: 8, endIndent: 8),
+                itemBuilder: (_, i) => _buildRequestRow(context, displayOrders[i]),
+              ),
+            ),
+
+          // ── Overflow indicator ─────────────────
+          if (hasOverflow)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(
+                child: Text(
+                  '+${requests.length - displayLimit} permohonan lagi',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColor.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildOrderRow(OrderModel o) {
-    final (statusLabel, statusColor) = _statusDisplay(o.status);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+  Widget _buildRequestRow(BuildContext context, OrderModel order) {
+    final timeStr = DateFormat('HH:mm', 'id').format(order.createdAt);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              o.status.iconData,
-              color: statusColor,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 8),
+          // ── Info ───────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  o.itemName,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.textPrimary,
-                  ),
+                  order.itemName.isNotEmpty ? order.itemName : order.id,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${o.customerName} • ${o.quantityLabel}',
+                  '${order.customerName} • ${order.quantityLabel} • $timeStr',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColor.textSecondary,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                statusLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
+
+          // ── Tombol Tolak ───────────────────────
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: IconButton(
+              onPressed: () => _showRejectDialog(context, order),
+              icon: const Icon(Icons.close_rounded, size: 18),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColor.error.withValues(alpha: 0.1),
+                foregroundColor: AppColor.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
+              padding: EdgeInsets.zero,
+              tooltip: 'Tolak',
+            ),
+          ),
+          const SizedBox(width: 6),
+
+          // ── Tombol Terima ──────────────────────
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: IconButton(
+              onPressed: () => _showAcceptDialog(context, order),
+              icon: const Icon(Icons.check_rounded, size: 18),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColor.success.withValues(alpha: 0.1),
+                foregroundColor: AppColor.success,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              padding: EdgeInsets.zero,
+              tooltip: 'Terima',
             ),
           ),
         ],
@@ -385,25 +461,144 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  (String, Color) _statusDisplay(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.request:
-        return ('Permohonan', AppColor.warning);
-      case OrderStatus.accepted:
-        return ('Diterima', AppColor.info);
-      case OrderStatus.rejected:
-        return ('Ditolak', AppColor.error);
-      case OrderStatus.pickedUp:
-        return ('Diangkut', AppColor.warning);
-      case OrderStatus.processing:
-        return ('Diproses', AppColor.primaryLight);
-      case OrderStatus.delivering:
-        return ('Diantar', AppColor.warning);
-      case OrderStatus.completed:
-        return ('Selesai', AppColor.success);
-      case OrderStatus.cancelled:
-        return ('Batal', AppColor.error);
-    }
+  // ── Accept Dialog ──────────────────────────────────────────
+
+  void _showAcceptDialog(BuildContext context, OrderModel order) {
+    final provider = context.read<OrderProvider>();
+    final totalCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Terima Permohonan'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${order.customerName} — ${order.itemName}',
+                style: const TextStyle(fontSize: 13, color: AppColor.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: totalCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Estimasi Biaya (Rp)',
+                  prefixText: 'Rp ',
+                  prefixStyle: const TextStyle(
+                    color: AppColor.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Masukkan estimasi biaya';
+                  final n = int.tryParse(v);
+                  if (n == null || n <= 0) return 'Biaya harus > 0';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              final total = double.parse(totalCtrl.text);
+              provider.acceptRequest(order.id, estimatedTotal: total);
+              Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ ${order.id} diterima'),
+                    backgroundColor: AppColor.success,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColor.success),
+            child: const Text('Terima', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Reject Dialog ──────────────────────────────────────────
+
+  void _showRejectDialog(BuildContext context, OrderModel order) {
+    final provider = context.read<OrderProvider>();
+    final reasonCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Tolak Permohonan'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Alasan penolakan akan dikirim ke customer.',
+                style: TextStyle(fontSize: 13, color: AppColor.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: reasonCtrl,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Alasan',
+                  hintText: 'Contoh: Lokasi di luar jangkauan',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Alasan wajib diisi' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              provider.rejectRequest(order.id, reason: reasonCtrl.text.trim());
+              Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ ${order.id} ditolak'),
+                    backgroundColor: AppColor.error,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColor.error),
+            child: const Text('Tolak', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Quick Actions ──────────────────────────────────────────

@@ -11,6 +11,8 @@ import 'package:devdar_laundry_pos_app/core/theme/formatter/currency_formatter.d
 import 'package:devdar_laundry_pos_app/core/theme/formatter/date_formatter.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_empty_state.dart';
+import 'package:go_router/go_router.dart';
+import 'package:devdar_laundry_pos_app/core/router/app_router.dart';
 
 class AdminOrderPage extends StatefulWidget {
   const AdminOrderPage({super.key});
@@ -32,7 +34,7 @@ class _AdminOrderPageState extends State<AdminOrderPage>
     'Permohonan',
     'Diproses',
     'Diantar',
-    'Selesai',
+    'Gagal',
   ];
 
   @override
@@ -103,7 +105,10 @@ class _AdminOrderPageState extends State<AdminOrderPage>
   }
 
   List<OrderModel> _filterByTab(String tab) {
-    if (tab == 'Semua') return _orders;
+    if (tab == 'Semua') {
+      // Semua order kecuali yang sudah selesai
+      return _orders.where((o) => o.status != OrderStatus.completed).toList();
+    }
     switch (tab) {
       case 'Permohonan':
         return _orders.where((o) => o.status == OrderStatus.request).toList();
@@ -115,10 +120,9 @@ class _AdminOrderPageState extends State<AdminOrderPage>
             .toList();
       case 'Diantar':
         return _orders.where((o) => o.status == OrderStatus.delivering).toList();
-      case 'Selesai':
+      case 'Gagal':
         return _orders
             .where((o) =>
-                o.status == OrderStatus.completed ||
                 o.status == OrderStatus.cancelled ||
                 o.status == OrderStatus.rejected)
             .toList();
@@ -354,25 +358,52 @@ class _AdminOrderPageState extends State<AdminOrderPage>
             ),
           ),
 
-          // ── Search ───────────────────────
+          // ── Search + History button ──
           AnimatedFadeSlider(
             index: 2,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: TextField(
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: 'Cari ID, nama pelanggan...',
-                  hintStyle: const TextStyle(fontSize: 13, color: AppColor.textMuted),
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColor.iconSecondary),
-                  filled: true,
-                  fillColor: AppColor.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      decoration: InputDecoration(
+                        hintText: 'Cari ID, nama pelanggan...',
+                        hintStyle: const TextStyle(fontSize: 13, color: AppColor.textMuted),
+                        prefixIcon: const Icon(Icons.search, size: 18, color: AppColor.iconSecondary),
+                        filled: true,
+                        fillColor: AppColor.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.go(AppRoutes.adminHistory),
+                      icon: const Icon(Icons.history_rounded, size: 18),
+                      label: const Text(
+                        'Riwayat',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.surface,
+                        foregroundColor: AppColor.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: AppColor.primary),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
