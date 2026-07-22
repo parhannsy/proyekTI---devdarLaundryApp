@@ -29,6 +29,9 @@ dependencies:
   # HTTP (untuk REST API call register)
   http: ^1.6.0
 
+  # Notifikasi lokal
+  flutter_local_notifications: ^18.0.1
+
   # Firebase
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1

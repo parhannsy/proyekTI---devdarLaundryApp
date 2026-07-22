@@ -14,6 +14,7 @@ import 'core/data/firebase/seed_service.dart';
 import 'core/data/mock_data.dart';
 import 'core/router/app_router.dart';
 import 'core/repositories/repositories.dart';
+import 'core/services/notification_service.dart';
 
 /// Flag global — apakah Firebase berhasil diinisialisasi?
 /// Di web selalu false karena Firebase JS SDK tidak di-load.
@@ -64,6 +65,13 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+
+  // ── Inisialisasi Notifikasi Lokal ───────────────────────
+  try {
+    await NotificationService.instance.initialize();
+  } catch (e) {
+    debugPrint('[Main] ⚠️ Gagal init notifikasi: $e');
+  }
 
   runApp(const DevdaraApp());
 }

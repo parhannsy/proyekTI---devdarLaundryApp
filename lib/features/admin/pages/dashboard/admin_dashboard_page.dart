@@ -12,6 +12,7 @@ import 'package:devdar_laundry_pos_app/core/models/models.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_stat_card.dart';
 import 'package:devdar_laundry_pos_app/features/admin/shared_widgets/admin_page_header.dart';
 import 'package:devdar_laundry_pos_app/features/shared/widgets/order_toast.dart';
+import 'package:devdar_laundry_pos_app/core/services/notification_service.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -62,6 +63,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (context.mounted) {
                   OrderToastService.showRequestToast(context, newRequests);
+                  // Juga kirim notifikasi ke handphone
+                  NotificationService.instance
+                      .showNewOrderNotification(count: newRequests);
                 }
               });
             }
